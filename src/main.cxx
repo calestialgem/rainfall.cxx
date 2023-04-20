@@ -1,4 +1,3 @@
-#include "lib.cxx"
 #include "source.cxx"
 
 #include <exception>
