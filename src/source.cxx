@@ -3,29 +3,35 @@
 #include <filesystem>
 #include <fstream>
 #include <ios>
+#include <iostream>
 #include <string>
 
 namespace rf
 {
-  /// Contents of a source file as a linear, ordered collection of characters.
-  struct Contents
-  {
-    std::string characters;
-  };
-
   /// Representation of a Thrice source.
-  class Source
+  struct Source
   {
-  public:
     Source(std::filesystem::path const& directory, std::string name):
-      path(directory / (std::move(name) + ".tr")), contents()
+      path(directory / (std::move(name) + ".tr"))
     {
       auto inputStream = std::ifstream(path);
-      inputStream >> contents.characters;
+      while (!inputStream.eof())
+      {
+        std::string line;
+        std::getline(inputStream, line);
+        contents += line;
+        contents += '\n';
+      }
+    }
+
+    void debugPrint()
+    {
+      std::cout << "Source: " << path << " Contents:" << std::endl
+                << contents << std::endl;
     }
 
   private:
     std::filesystem::path path;
-    Contents contents;
+    std::string contents;
   };
 }

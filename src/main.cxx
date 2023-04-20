@@ -1,16 +1,61 @@
 #include "lib.cxx"
+#include "source.cxx"
 
+#include <exception>
+#include <filesystem>
 #include <iostream>
 #include <span>
+#include <stdexcept>
 #include <string_view>
 
-/// Entry into the compiler.
-int main(int const argc, char const* const* const argv) noexcept
+/// Parsed command-line arguments.
+struct Arguments
 {
-  // Test arguments.
-  for (std::string_view argument: std::span(argv, argc))
-    std::cout << argument << std::endl;
+  explicit Arguments(std::span<char const* const> commandLineArguments)
+  {
+    switch (commandLineArguments.size())
+    {
+    case 0:
+    case 1:
+      throw std::runtime_error(
+        "Usage: rainfall [main-directory: .] <main-file>");
+    case 2:
+      mainDirectory = ".";
+      mainFile = commandLineArguments[1];
+      break;
+    case 3:
+      mainDirectory = commandLineArguments[1];
+      mainFile = commandLineArguments[2];
+      break;
+    default:
+      throw std::runtime_error(
+        "There could be at most 2 command line arguments!");
+    }
 
-  // Test the project setup.
-  std::cout << rf::provide_message() << std::endl;
+    mainDirectory = mainDirectory.lexically_normal();
+  }
+
+  rf::Source loadMainSource()
+  {
+    return rf::Source(mainDirectory, mainFile);
+  }
+
+private:
+  std::filesystem::path mainDirectory;
+  std::string mainFile;
+};
+
+/// Entry into the compiler.
+int main(int const argc, char const* const* const argv)
+{
+  try
+  {
+    auto arguments = Arguments(std::span(argv, argc));
+    auto mainSource = arguments.loadMainSource();
+    mainSource.debugPrint();
+  }
+  catch (std::exception const& exception)
+  {
+    std::cerr << exception.what() << std::endl;
+  }
 }
