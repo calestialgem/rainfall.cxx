@@ -20,4 +20,4 @@ Licensed under GPL 3.0 or later.
 
 ---
 
-Copyright (C) 2022 Cem Geçgel <gecgelcem@outlook.com>
+Copyright (C) 2023 Cem Geçgel <gecgelcem@outlook.com>
