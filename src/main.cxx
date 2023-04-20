@@ -36,7 +36,7 @@ struct Arguments
 
   rf::Source loadMainSource()
   {
-    return rf::Source(mainDirectory, mainFile);
+    return rf::Source::load(mainDirectory, mainFile);
   }
 
 private:
@@ -51,7 +51,11 @@ int main(int const argc, char const* const* const argv)
   {
     auto arguments = Arguments(std::span(argv, argc));
     auto mainSource = arguments.loadMainSource();
-    mainSource.debugPrint();
+    std::cout << "Source: " << mainSource.name << " in " << mainSource.directory
+              << std::endl
+              << "Full Path: " << mainSource.fullPath << std::endl
+              << "Contents: " << std::endl
+              << mainSource.contents;
   }
   catch (std::exception const& exception)
   {

@@ -11,10 +11,19 @@ namespace rf
   /// Representation of a Thrice source.
   struct Source
   {
-    Source(std::filesystem::path const& directory, std::string name):
-      path(directory / (std::move(name) + ".tr"))
+    std::filesystem::path fullPath;
+    std::filesystem::path directory;
+    std::string name;
+    std::string contents;
+
+    static Source load(std::filesystem::path directory, std::string name)
     {
-      auto inputStream = std::ifstream(path);
+      // Construct the full path by adding the file extension.
+      auto fullPath = directory / (name + ".tr");
+
+      // Read all the lines in the file.
+      auto contents = std::string();
+      auto inputStream = std::ifstream(fullPath);
       while (!inputStream.eof())
       {
         std::string line;
@@ -22,16 +31,12 @@ namespace rf
         contents += line;
         contents += '\n';
       }
-    }
 
-    void debugPrint()
-    {
-      std::cout << "Source: " << path << " Contents:" << std::endl
-                << contents << std::endl;
+      return Source{
+        std::move(fullPath),
+        std::move(directory),
+        std::move(name),
+        std::move(contents)};
     }
-
-  private:
-    std::filesystem::path path;
-    std::string contents;
   };
 }
