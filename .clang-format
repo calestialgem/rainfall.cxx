@@ -1,0 +1,143 @@
+BasedOnStyle: LLVM
+AccessModifierOffset: -2
+AlignAfterOpenBracket: AlwaysBreak
+AlignArrayOfStructures: None
+AlignConsecutiveAssignments: None
+AlignConsecutiveBitFields: None
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: None
+AlignEscapedNewlines: Right
+AlignOperands: Align
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: true
+AlwaysBreakTemplateDeclarations: Yes
+AttributeMacros: []
+BinPackArguments: false
+BinPackParameters: false
+BitFieldColonSpacing: None
+# BreakAfterAttributes: Always
+BreakBeforeBinaryOperators: None
+BreakBeforeBraces: Allman
+BreakBeforeConceptDeclarations: Always
+# BreakBeforeInlineASMColon: OnlyMultiline
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
+BreakStringLiterals: true
+ColumnLimit: 80
+QualifierAlignment: Leave
+CompactNamespaces: false
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+DisableFormat: false
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: LogicalBlock
+FixNamespaceComments: false
+ForEachMacros: []
+IfMacros: []
+IncludeBlocks: Regroup
+IncludeCategories: []
+IncludeIsMainRegex: ""
+IncludeIsMainSourceRegex: ""
+IndentAccessModifiers: false
+IndentCaseBlocks: false
+IndentCaseLabels: false
+IndentExternBlock: NoIndent
+IndentGotoLabels: true
+IndentPPDirectives: BeforeHash
+IndentRequiresClause: true
+IndentWidth: 2
+IndentWrappedFunctionNames: false
+InsertBraces: false
+# InsertNewlineAtEOF: true
+# IntegerLiteralSeparator:
+#   Binary: 0
+#   Decimal: 3
+#   Hex: -1
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: Signature
+Language: Cpp
+# LineEnding: DeriveLF
+MacroBlockBegin: ""
+MacroBlockEnd: ""
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: All
+NamespaceMacros: []
+PPIndentWidth: -1
+# PackConstructorInitializers: NextLineOnly
+PackConstructorInitializers: NextLine
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakOpenParenthesis: 0
+PenaltyBreakString: 1000
+PenaltyBreakTemplateDeclaration: 10
+PenaltyExcessCharacter: 1000000
+PenaltyIndentedWhitespace: 0
+PenaltyReturnTypeOnItsOwnLine: 60
+PointerAlignment: Left
+QualifierAlignment: Custom
+QualifierOrder: [
+  # 'friend',
+  'static',
+  'constexpr',
+  'inline',
+  'type',
+  'const',
+  'volatile',
+  'restrict',
+]
+ReferenceAlignment: Pointer
+ReflowComments: true
+RemoveBracesLLVM: true
+# RemoveSemicolon: true
+RequiresClausePosition: OwnLine
+# RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Leave
+ShortNamespaceLines: 1
+SortIncludes: CaseSensitive
+# SortUsingDeclarations: LexicographicNumeric
+SortUsingDeclarations: true
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: false
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: false
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Never
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: 1
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+Standard: Latest
+StatementAttributeLikeMacros: []
+StatementMacros: []
+TabWidth: 2
+TypenameMacros: []
+UseTab: Never
+WhitespaceSensitiveMacros: []

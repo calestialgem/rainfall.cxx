@@ -1,0 +1,5 @@
+# clangd temporary files.
+/.cache/
+
+# cmake build directory.
+/build/
