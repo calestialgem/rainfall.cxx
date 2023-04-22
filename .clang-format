@@ -9,18 +9,18 @@ AlignConsecutiveMacros: None
 AlignEscapedNewlines: Right
 AlignOperands: Align
 AlignTrailingComments: true
-AllowAllArgumentsOnNextLine: false
-AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: Empty
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: Empty
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLambdasOnASingleLine: Empty
-AllowShortLoopsOnASingleLine: false
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: true
-AlwaysBreakTemplateDeclarations: Yes
+AlwaysBreakTemplateDeclarations: true
 AttributeMacros: []
 BinPackArguments: false
 BinPackParameters: false
@@ -60,7 +60,7 @@ IndentPPDirectives: BeforeHash
 IndentRequiresClause: true
 IndentWidth: 2
 IndentWrappedFunctionNames: false
-InsertBraces: false
+InsertBraces: true
 # InsertNewlineAtEOF: true
 # IntegerLiteralSeparator:
 #   Binary: 0
@@ -102,7 +102,7 @@ QualifierOrder: [
 ]
 ReferenceAlignment: Pointer
 ReflowComments: true
-RemoveBracesLLVM: true
+RemoveBracesLLVM: false
 # RemoveSemicolon: true
 RequiresClausePosition: OwnLine
 # RequiresExpressionIndentation: OuterScope

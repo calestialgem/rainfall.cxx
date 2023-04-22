@@ -20,8 +20,7 @@ struct Arguments
     case 1:
       throw std::invalid_argument(
         "Usage: rainfall [main-directory: .] <main-file>");
-    case 2:
-      return Arguments{".", commandLineArguments[1]};
+    case 2: return Arguments{".", commandLineArguments[1]};
     case 3:
       return Arguments{
         std::filesystem::path(commandLineArguments[1]).lexically_normal(),
