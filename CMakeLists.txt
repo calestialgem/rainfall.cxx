@@ -16,4 +16,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   -Wall
   -Wextra
   -Wpedantic
+  -Wno-missing-field-initializers # GCC warns when defaulting members to 0.
 )
