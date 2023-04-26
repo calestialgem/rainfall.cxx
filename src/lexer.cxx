@@ -139,6 +139,7 @@ namespace rf
     static constexpr auto relativeFilePath = std::string_view{"lexer.cxx"};
   };
 
+  /// Exceptional situation that stops the compilation.
   struct ThriceException: public std::exception
   {
     std::string explanation;
@@ -346,12 +347,15 @@ namespace rf
     Portion portion;
   };
 
+  /// Representation of a Thrice source file that went through the lexical
+  /// analysis stage of the compiler.
   struct LexicalSource
   {
     Source source;
     std::vector<Lexeme> lexemes;
   };
 
+  /// Context of the lexical analysis stage of the compiler.
   struct Lexer
   {
     Source source;
