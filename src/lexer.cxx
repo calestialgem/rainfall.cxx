@@ -130,13 +130,13 @@ namespace rf
       std::uint32_t line = __builtin_LINE(),
       std::string_view function = __builtin_FUNCTION())
     {
-      file.remove_prefix(FullFilePath.length() - RelativeFilePath.length());
+      file.remove_prefix(fullFilePath.length() - relativeFilePath.length());
       return CompilerLocation{.file = file, .line = line, .function = function};
     }
 
   private:
-    static constexpr auto FullFilePath = std::string_view{__builtin_FILE()};
-    static constexpr auto RelativeFilePath = std::string_view{"lexer.cxx"};
+    static constexpr auto fullFilePath = std::string_view{__builtin_FILE()};
+    static constexpr auto relativeFilePath = std::string_view{"lexer.cxx"};
   };
 
   struct ThriceException: public std::exception
@@ -224,7 +224,7 @@ namespace rf
     char const* what() const noexcept override { return explanation.c_str(); }
 
   private:
-    static constexpr auto LineNumberWidth = 10;
+    static constexpr auto lineNumberWidth = 10;
 
     static void
     reportPortion(auto& stream, std::string_view whole, Portion portion)
@@ -265,15 +265,15 @@ namespace rf
 
       formatAll(
         stream,
-        std::setw(LineNumberWidth),
+        std::setw(lineNumberWidth),
         continuationStyle == ContinuationStyle::Dotted ? "..." : " ",
         " |\n",
-        std::setw(LineNumberWidth),
+        std::setw(lineNumberWidth),
         portion.first.line,
         " | ",
         line.findValue(whole),
         '\n',
-        std::setw(LineNumberWidth),
+        std::setw(lineNumberWidth),
         ' ',
         " | ",
         std::setw(portion.first.column),
@@ -377,7 +377,7 @@ namespace rf
     }
 
   private:
-    static constexpr auto DecimalBase = std::int32_t{10};
+    static constexpr auto decimalBase = std::int32_t{10};
 
     static void addToMark(Mark& mark, int amount = 1)
     {
@@ -584,8 +584,8 @@ namespace rf
 
         while (take(isDigit))
         {
-          if (exponent > INT32_MAX / DecimalBase) { error("Huge number!"); }
-          exponent *= DecimalBase;
+          if (exponent > INT32_MAX / decimalBase) { error("Huge number!"); }
+          exponent *= decimalBase;
 
           auto digit = static_cast<std::int32_t>(convertToDigit(cPrevious));
           if (exponent > INT32_MAX - digit) { error("Huge number!"); }
@@ -615,8 +615,8 @@ namespace rf
           if (!take(isDigit)) { break; }
         }
 
-        if (mantissa > UINT64_MAX / DecimalBase) { error("Huge number!"); }
-        mantissa *= DecimalBase;
+        if (mantissa > UINT64_MAX / decimalBase) { error("Huge number!"); }
+        mantissa *= decimalBase;
 
         auto digit = convertToDigit(cPrevious);
         if (mantissa > UINT64_MAX - digit) { error("Huge number!"); }
