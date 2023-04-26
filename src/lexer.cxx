@@ -130,14 +130,13 @@ namespace rf
       std::uint32_t line = __builtin_LINE(),
       std::string_view function = __builtin_FUNCTION())
     {
-      constexpr auto thisFile = std::string_view{__builtin_FILE()};
-
-      auto prefix = thisFile;
-      prefix.remove_suffix(std::string_view{"lexer.cxx"}.length());
-      file.remove_prefix(prefix.length());
-
+      file.remove_prefix(FullFilePath.length() - RelativeFilePath.length());
       return CompilerLocation{.file = file, .line = line, .function = function};
     }
+
+  private:
+    static constexpr auto FullFilePath = std::string_view{__builtin_FILE()};
+    static constexpr auto RelativeFilePath = std::string_view{"lexer.cxx"};
   };
 
   struct ThriceException: public std::exception
@@ -378,7 +377,7 @@ namespace rf
     }
 
   private:
-    static constexpr auto DECIMAL_BASE = std::int32_t{10};
+    static constexpr auto DecimalBase = std::int32_t{10};
 
     static void addToMark(Mark& mark, int amount = 1)
     {
@@ -585,8 +584,8 @@ namespace rf
 
         while (take(isDigit))
         {
-          if (exponent > INT32_MAX / DECIMAL_BASE) { error("Huge number!"); }
-          exponent *= DECIMAL_BASE;
+          if (exponent > INT32_MAX / DecimalBase) { error("Huge number!"); }
+          exponent *= DecimalBase;
 
           auto digit = static_cast<std::int32_t>(convertToDigit(cPrevious));
           if (exponent > INT32_MAX - digit) { error("Huge number!"); }
@@ -616,8 +615,8 @@ namespace rf
           if (!take(isDigit)) { break; }
         }
 
-        if (mantissa > UINT64_MAX / DECIMAL_BASE) { error("Huge number!"); }
-        mantissa *= DECIMAL_BASE;
+        if (mantissa > UINT64_MAX / DecimalBase) { error("Huge number!"); }
+        mantissa *= DecimalBase;
 
         auto digit = convertToDigit(cPrevious);
         if (mantissa > UINT64_MAX - digit) { error("Huge number!"); }
