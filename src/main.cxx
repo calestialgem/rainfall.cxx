@@ -100,6 +100,7 @@ int main(int argc, char const* const* argv)
             if (l.exponent != 0) { std::cout << "x10^" << l.exponent; }
           }},
         lexeme.variant);
+      std::cout << '\n';
     }
   }
   catch (std::exception const& exception)
