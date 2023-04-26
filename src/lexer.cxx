@@ -595,7 +595,7 @@ namespace rf
         if (negative) { exponent *= -1; }
       }
 
-      if (number.exponent < INT32_MIN - exponent) { error("Huge number!"); }
+      if (exponent < INT32_MIN - number.exponent) { error("Huge number!"); }
       number.exponent += exponent;
 
       lexemes.push_back(
