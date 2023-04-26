@@ -437,7 +437,7 @@ namespace rf
         case '}': lexMark(Mark::ClosingBrace); break;
         case '(': lexMark(Mark::OpeningParenthesis); break;
         case ')': lexMark(Mark::ClosingParenthesis); break;
-        case ':': lexMark(Mark::Semicolon); break;
+        case ';': lexMark(Mark::Semicolon); break;
         case '*': lexMark(Mark::Star); break;
         case '/': lexMark(Mark::Slash); break;
         case '%': lexMark(Mark::Percent); break;
