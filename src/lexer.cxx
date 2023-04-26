@@ -4,10 +4,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iomanip>
 #include <optional>
+#include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -75,6 +79,21 @@ namespace rf
     std::size_t index;
     std::uint32_t line;
     std::uint32_t column;
+
+    Location findLineStart() const
+    {
+      return Location{.index = index - column + 1, .line = line, .column = 1};
+    }
+
+    Location findLineEnd(std::string_view whole) const
+    {
+      auto iLineEnd = index + 1;
+      while (iLineEnd < whole.size() && whole[iLineEnd] != '\n') { iLineEnd++; }
+      return Location{
+        .index = iLineEnd - 1,
+        .line = line,
+        .column = column + static_cast<std::uint32_t>(iLineEnd - 1 - index)};
+    }
   };
 
   /// Linearly stored group of characters from a Thrice source.
@@ -83,12 +102,232 @@ namespace rf
     Location first;
     Location last;
 
+    static Portion findLine(std::string_view whole, Location location)
+    {
+      return Portion{
+        .first = location.findLineStart(), .last = location.findLineEnd(whole)};
+    }
+
     std::string_view findValue(std::string_view whole) const
     {
       return whole.substr(first.index, findLength());
     }
 
     std::size_t findLength() const { return last.index - first.index + 1; }
+
+    std::size_t findHeight() const { return last.line - first.line + 1; }
+  };
+
+  /// Positional information from a source file of the compiler. Not Thrice!
+  struct CompilerLocation
+  {
+    std::string_view file;
+    std::uint32_t line;
+    std::string_view function;
+
+    static CompilerLocation findCaller(
+      std::string_view file = __builtin_FILE(),
+      std::uint32_t line = __builtin_LINE(),
+      std::string_view function = __builtin_FUNCTION())
+    {
+      constexpr auto thisFile = std::string_view{__builtin_FILE()};
+
+      auto prefix = thisFile;
+      prefix.remove_suffix(std::string_view{"lexer.cxx"}.length());
+      file.remove_prefix(prefix.length());
+
+      return CompilerLocation{.file = file, .line = line, .function = function};
+    }
+  };
+
+  struct ThriceException: public std::exception
+  {
+    std::string explanation;
+
+    template<typename... TFormattables>
+    [[noreturn]] static void throwWithLocation(
+      Source const& source,
+      Location location,
+      std::string_view title,
+      std::tuple<TFormattables...> formattables,
+      CompilerLocation caller = CompilerLocation::findCaller())
+    {
+      auto stream = std::ostringstream{};
+      formatAll(
+        stream,
+        source.fullPath.string(),
+        ':',
+        location.line,
+        ':',
+        location.column,
+        ": ",
+        title,
+        ": ",
+        formattables,
+        '\n');
+      reportPortion(
+        stream, source.contents, Portion{.first = location, .last = location});
+      formatAll(
+        stream,
+        "\n[DEBUG] Emitted at ",
+        caller.file,
+        ':',
+        caller.line,
+        " in ",
+        caller.function,
+        '.');
+      throw ThriceException{stream.str()};
+    }
+
+    template<typename... TFormattables>
+    [[noreturn]] static void throwWithPortion(
+      Source const& source,
+      Portion portion,
+      std::string_view title,
+      std::tuple<TFormattables...> formattables,
+      CompilerLocation caller = CompilerLocation::findCaller())
+    {
+      if (portion.findLength() == 1)
+      {
+        throwWithLocation(source, portion.first, title, formattables, caller);
+      }
+
+      auto stream = std::ostringstream{};
+      formatAll(
+        stream,
+        source.fullPath.string(),
+        ':',
+        portion.first.line,
+        ':',
+        portion.first.column,
+        ':',
+        portion.last.line,
+        ':',
+        portion.last.column,
+        ": ",
+        title,
+        ": ",
+        formattables,
+        '\n');
+      reportPortion(stream, source.contents, portion);
+      formatAll(
+        stream,
+        "\n[DEBUG] Emitted at ",
+        caller.file,
+        ':',
+        caller.line,
+        " in ",
+        caller.function,
+        '.');
+      throw ThriceException{stream.str()};
+    }
+
+    char const* what() const noexcept override { return explanation.c_str(); }
+
+  private:
+    static constexpr auto LineNumberWidth = 10;
+
+    static void
+    reportPortion(auto& stream, std::string_view whole, Portion portion)
+    {
+      if (portion.findHeight() == 1)
+      {
+        underlinePortion(stream, whole, portion);
+      }
+      else
+      {
+        underlinePortion(
+          stream,
+          whole,
+          Portion{
+            .first = portion.first, .last = portion.first.findLineEnd(whole)});
+        underlinePortion(
+          stream,
+          whole,
+          Portion{.first = portion.last.findLineStart(), .last = portion.last},
+          ContinuationStyle::Dotted);
+      }
+      stream << std::endl;
+    }
+
+    enum struct ContinuationStyle
+    {
+      None,
+      Dotted,
+    };
+
+    static void underlinePortion(
+      auto& stream,
+      std::string_view whole,
+      Portion portion,
+      ContinuationStyle continuationStyle = ContinuationStyle::None)
+    {
+      auto line = Portion::findLine(whole, portion.first);
+
+      formatAll(
+        stream,
+        std::setw(LineNumberWidth),
+        continuationStyle == ContinuationStyle::Dotted ? "..." : " ",
+        " |\n",
+        std::setw(LineNumberWidth),
+        portion.first.line,
+        " | ",
+        line.findValue(whole),
+        '\n',
+        std::setw(LineNumberWidth),
+        ' ',
+        " | ",
+        std::setw(portion.first.column),
+        '~');
+      for (auto i = std::size_t{1}; i < portion.findLength(); i++)
+      {
+        stream << '~';
+      }
+    }
+
+    static void formatAll(auto& stream) { (void)stream; }
+
+    template<typename TFirstFormattable, typename... TRemainingFormattables>
+    static void formatAll(
+      auto& stream,
+      TFirstFormattable firstFormattable,
+      TRemainingFormattables... remainingFormattables)
+    {
+      formatOnce(stream, firstFormattable);
+      formatAll(stream, remainingFormattables...);
+    }
+
+    template<typename TFormattable>
+    static void formatOnce(auto& stream, TFormattable formattable)
+    {
+      // For not getting a warning when streaming string literals.
+      if constexpr (std::is_same_v<std::decay_t<TFormattable>, char*>)
+      {
+        stream << (char const*)formattable;
+      }
+      else { stream << formattable; }
+    }
+
+    template<typename... TFormattables>
+    static void formatOnce(auto& stream, std::tuple<TFormattables...> tuple)
+    {
+      formatTuple(stream, tuple, std::index_sequence_for<TFormattables...>());
+    }
+
+    template<typename... TFormattables, std::size_t... TIndices>
+    static void formatTuple(
+      auto& stream,
+      std::tuple<TFormattables...> tuple,
+      std::index_sequence<TIndices...> indices)
+    {
+      ((stream << std::get<TIndices>(tuple)), ...);
+      (void)indices;
+    }
+
+    explicit ThriceException(std::string explanation):
+      explanation{std::move(explanation)}
+    {
+    }
   };
 
   /// Indivisible structural element of a Thrice source.
@@ -226,7 +465,11 @@ namespace rf
             break;
           }
 
-          throw std::invalid_argument{"Unknown character!"};
+          ThriceException::throwWithLocation(
+            source,
+            lStart,
+            "error",
+            std::tuple{"Unknown character '", cStart, "' in source!"});
         }
       }
     }
@@ -326,10 +569,7 @@ namespace rf
         auto iFractionEnd = lCurrent.index;
 
         auto nFractionLength = iFractionEnd - iFractionBegin;
-        if (nFractionLength > INT32_MAX)
-        {
-          throw std::invalid_argument{"Huge number!"};
-        }
+        if (nFractionLength > INT32_MAX) { error("Huge number!"); }
         number.exponent = static_cast<std::int32_t>(-nFractionLength);
       }
 
@@ -341,34 +581,22 @@ namespace rf
         auto negative = take('-');
         if (!negative) { take('+'); }
 
-        if (!isDigit(cCurrent))
-        {
-          throw std::invalid_argument{"Incomplete number!"};
-        }
+        if (!isDigit(cCurrent)) { error("Incomplete number!"); }
 
         while (take(isDigit))
         {
-          if (exponent > INT32_MAX / DECIMAL_BASE)
-          {
-            throw std::invalid_argument{"Huge number!"};
-          }
+          if (exponent > INT32_MAX / DECIMAL_BASE) { error("Huge number!"); }
           exponent *= DECIMAL_BASE;
 
           auto digit = static_cast<std::int32_t>(convertToDigit(cPrevious));
-          if (exponent > INT32_MAX - digit)
-          {
-            throw std::invalid_argument{"Huge number!"};
-          }
+          if (exponent > INT32_MAX - digit) { error("Huge number!"); }
           exponent += digit;
         }
 
         if (negative) { exponent *= -1; }
       }
 
-      if (number.exponent < INT32_MIN - exponent)
-      {
-        throw std::invalid_argument{"Huge number!"};
-      }
+      if (number.exponent < INT32_MIN - exponent) { error("Huge number!"); }
       number.exponent += exponent;
 
       lexemes.push_back(
@@ -381,27 +609,18 @@ namespace rf
       {
         if (take('_'))
         {
-          if (!take(isDigit))
-          {
-            throw std::invalid_argument{"Incomplete number!"};
-          }
+          if (!take(isDigit)) { error("Incomplete number!"); }
         }
         else
         {
           if (!take(isDigit)) { break; }
         }
 
-        if (mantissa > UINT64_MAX / DECIMAL_BASE)
-        {
-          throw std::invalid_argument{"Huge number!"};
-        }
+        if (mantissa > UINT64_MAX / DECIMAL_BASE) { error("Huge number!"); }
         mantissa *= DECIMAL_BASE;
 
         auto digit = convertToDigit(cPrevious);
-        if (mantissa > UINT64_MAX - digit)
-        {
-          throw std::invalid_argument{"Huge number!"};
-        }
+        if (mantissa > UINT64_MAX - digit) { error("Huge number!"); }
         mantissa += digit;
       }
     }
@@ -417,6 +636,22 @@ namespace rf
         keyword ? *keyword : Lexeme::Variant{Identifier{.value = word}};
 
       lexemes.push_back(Lexeme{.variant = variant, .portion = portion});
+    }
+
+    [[noreturn]] void error(
+      auto formattable,
+      CompilerLocation caller = CompilerLocation::findCaller()) const
+    {
+      error(std::tuple{formattable}, caller);
+    }
+
+    template<typename... TFormattables>
+    [[noreturn]] void error(
+      std::tuple<TFormattables...> formattables,
+      CompilerLocation caller = CompilerLocation::findCaller()) const
+    {
+      ThriceException::throwWithPortion(
+        source, findPreviousPortion(), "error", formattables, caller);
     }
 
     Portion findPreviousPortion() const
