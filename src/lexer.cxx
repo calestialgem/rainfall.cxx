@@ -63,7 +63,14 @@ namespace rf
   /// Name of a symbol in a Thrice program.
   struct Identifier
   {
+    enum Variant
+    {
+      Uppercase,
+      Lowercase,
+    };
+
     std::string_view value;
+    Variant variant;
   };
 
   /// Constant number that is embedded in a Thrice program.
@@ -402,8 +409,17 @@ namespace rf
 
     static bool isWordInitial(char character)
     {
-      return (character >= 'a' && character <= 'z') ||
-             (character >= 'A' && character <= 'Z') || character == '_';
+      return isUppercase(character) || isLowercase(character);
+    }
+
+    static bool isUppercase(char character)
+    {
+      return character >= 'A' && character <= 'Z';
+    }
+
+    static bool isLowercase(char character)
+    {
+      return character >= 'a' && character <= 'z';
     }
 
     static bool isDigit(char character)
@@ -635,8 +651,12 @@ namespace rf
       auto portion = findPreviousPortion();
       auto word = portion.findValue(source.contents);
       auto keyword = convertToKeyword(word);
+      auto identifier =
+        isUppercase(cStart) ? Identifier::Uppercase : Identifier::Lowercase;
       auto variant =
-        keyword ? *keyword : Lexeme::Variant{Identifier{.value = word}};
+        keyword
+          ? *keyword
+          : Lexeme::Variant{Identifier{.value = word, .variant = identifier}};
 
       lexemes.push_back(Lexeme{.variant = variant, .portion = portion});
     }
