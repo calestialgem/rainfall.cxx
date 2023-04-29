@@ -374,22 +374,24 @@ namespace rf
   /// Context of the lexical analysis stage of the compiler.
   struct Lexer
   {
+    struct ReadLocation
+    {
+      Location location;
+      char character;
+    };
+
     Source source;
     std::vector<Lexeme> lexemes;
-    Location lCurrent;
-    Location lPrevious;
-    Location lStart;
-    char cCurrent;
-    char cPrevious;
-    char cStart;
+    ReadLocation current;
+    ReadLocation previous;
+    ReadLocation initial;
 
     static LexicalSource lex(Source source)
     {
-      auto cCurrent = source.contents.empty() ? '\0' : source.contents[0];
-      auto lexer = Lexer{
-        .source = std::move(source),
-        .lCurrent = Location{.line = 1, .column = 1},
-        .cCurrent = cCurrent};
+      auto initial = source.contents.empty() ? '\0' : source.contents[0];
+      auto first = ReadLocation{
+        .location = Location{.line = 1, .column = 1}, .character = initial};
+      auto lexer = Lexer{.source = std::move(source), .current = first};
 
       lexer.compute();
 
@@ -450,10 +452,9 @@ namespace rf
         // initial character of the next lexeme; thus, take it unconditionally
         // and remember the next lexeme's initial.
         advance();
-        lStart = lPrevious;
-        cStart = cPrevious;
+        initial = previous;
 
-        switch (cStart)
+        switch (initial.character)
         {
         case ' ':
         case '\t':
@@ -474,25 +475,25 @@ namespace rf
         case '-': lexMark(Mark::Minus); break;
         case '~': lexMark(Mark::Tilde); break;
         case '^': lexMark(Mark::Caret); break;
-        case '=': lexMark(Mark::Equal, MarkVariant::DOUBLE); break;
-        case '&': lexMark(Mark::Ampersand, MarkVariant::DOUBLE); break;
-        case '|': lexMark(Mark::Pipe, MarkVariant::DOUBLE); break;
-        case '!': lexMark(Mark::Exclamation, MarkVariant::EQUAL); break;
-        case '<': lexMark(Mark::Left, MarkVariant::EQUAL_OR_DOUBLE); break;
-        case '>': lexMark(Mark::Right, MarkVariant::EQUAL_OR_DOUBLE); break;
+        case '=': lexMark(Mark::Equal, MarkVariant::Double); break;
+        case '&': lexMark(Mark::Ampersand, MarkVariant::Double); break;
+        case '|': lexMark(Mark::Pipe, MarkVariant::Double); break;
+        case '!': lexMark(Mark::Exclamation, MarkVariant::Equal); break;
+        case '<': lexMark(Mark::Left, MarkVariant::EqualOrDouble); break;
+        case '>': lexMark(Mark::Right, MarkVariant::EqualOrDouble); break;
         case '_':
           lexemes.push_back(Lexeme{
             .variant = Identifier{.variant = Identifier::Underscore{}},
             .portion = findPreviousPortion()});
           break;
         default:
-          if (isDigit(cStart))
+          if (isDigit(initial.character))
           {
             lexNumber();
             break;
           }
 
-          if (isWordInitial(cStart))
+          if (isWordInitial(initial.character))
           {
             lexWord();
             break;
@@ -500,32 +501,33 @@ namespace rf
 
           ThriceException::throwWithLocation(
             source,
-            lStart,
+            initial.location,
             "error",
-            std::tuple{"Unknown character '", cStart, "' in source!"});
+            std::tuple{
+              "Unknown character '", initial.character, "' in source!"});
         }
       }
     }
 
     void advance()
     {
-      lPrevious = lCurrent;
-      cPrevious = cCurrent;
+      previous = current;
 
-      cCurrent = hasCurrent() ? source.contents[++lCurrent.index] : '\0';
+      current.character =
+        hasCurrent() ? source.contents[++current.location.index] : '\0';
 
       // Update the line number after the new line character.
-      if (cPrevious == '\n')
+      if (previous.character == '\n')
       {
-        lCurrent.line++;
-        lCurrent.column = 1;
+        current.location.line++;
+        current.location.column = 1;
       }
-      else { lCurrent.column++; }
+      else { current.location.column++; }
     }
 
     bool take(auto predicate)
     {
-      if (!predicate(cCurrent)) { return false; }
+      if (!predicate(current.character)) { return false; }
       advance();
       return true;
     }
@@ -537,30 +539,30 @@ namespace rf
 
     bool hasCurrent() const
     {
-      return lCurrent.index < source.contents.length();
+      return current.location.index < source.contents.length();
     }
 
     enum struct MarkVariant
     {
-      SINGLE,
-      DOUBLE,
-      EQUAL,
-      EQUAL_OR_DOUBLE,
+      Single,
+      Double,
+      Equal,
+      EqualOrDouble,
     };
 
-    void lexMark(Mark mark, MarkVariant variant = MarkVariant::SINGLE)
+    void lexMark(Mark mark, MarkVariant variant = MarkVariant::Single)
     {
       switch (variant)
       {
-      case MarkVariant::SINGLE: break;
-      case MarkVariant::EQUAL:
+      case MarkVariant::Single: break;
+      case MarkVariant::Equal:
         if (take('=')) { addToMark(mark); }
         break;
-      case MarkVariant::DOUBLE:
-        if (take(cStart)) { addToMark(mark); }
+      case MarkVariant::Double:
+        if (take(initial.character)) { addToMark(mark); }
         break;
-      case MarkVariant::EQUAL_OR_DOUBLE:
-        if (take(cStart)) { addToMark(mark, 2); }
+      case MarkVariant::EqualOrDouble:
+        if (take(initial.character)) { addToMark(mark, 2); }
         else if (take('=')) { addToMark(mark); }
         break;
       }
@@ -571,35 +573,28 @@ namespace rf
 
     void lexNumber()
     {
-      auto number = Number{.mantissa = convertToDigit(cStart)};
+      auto number = Number{.mantissa = convertToDigit(initial.character)};
 
       // Lex the whole part.
       lexMantissa(number.mantissa);
 
+      // Lex the fractional part.
       // Cache current location to roll back the taken '.'. It can be a member
       // access instead of fraction separator.
-      auto lPreviousAtDot = lPrevious;
-      auto cPreviousAtDot = cPrevious;
-      auto lCurrentAtDot = lCurrent;
-      auto cCurrentAtDot = cCurrent;
-
-      // Lex the fractional part.
-      if (take('.'))
+      if (auto previousAtDot = previous, currentAtDot = current; take('.'))
       {
-        if (!isDigit(cCurrent))
+        if (!isDigit(current.character))
         {
           // Rollback the taken '.' and end the number.
-          lPrevious = lPreviousAtDot;
-          cPrevious = cPreviousAtDot;
-          lCurrent = lCurrentAtDot;
-          cCurrent = cCurrentAtDot;
+          previous = previousAtDot;
+          current = currentAtDot;
           lexemes.push_back(
             Lexeme{.variant = number, .portion = findPreviousPortion()});
         }
 
-        auto iFractionBegin = lCurrent.index;
+        auto iFractionBegin = current.location.index;
         lexMantissa(number.mantissa);
-        auto iFractionEnd = lCurrent.index;
+        auto iFractionEnd = current.location.index;
 
         auto nFractionLength = iFractionEnd - iFractionBegin;
         if (nFractionLength > INT32_MAX) { error("Huge number!"); }
@@ -614,14 +609,15 @@ namespace rf
         auto negative = take('-');
         if (!negative) { take('+'); }
 
-        if (!isDigit(cCurrent)) { error("Incomplete number!"); }
+        if (!isDigit(current.character)) { error("Incomplete number!"); }
 
         while (take(isDigit))
         {
           if (exponent > INT32_MAX / decimalBase) { error("Huge number!"); }
           exponent *= decimalBase;
 
-          auto digit = static_cast<std::int32_t>(convertToDigit(cPrevious));
+          auto digit =
+            static_cast<std::int32_t>(convertToDigit(previous.character));
           if (exponent > INT32_MAX - digit) { error("Huge number!"); }
           exponent += digit;
         }
@@ -652,7 +648,7 @@ namespace rf
         if (mantissa > UINT64_MAX / decimalBase) { error("Huge number!"); }
         mantissa *= decimalBase;
 
-        auto digit = convertToDigit(cPrevious);
+        auto digit = convertToDigit(previous.character);
         if (mantissa > UINT64_MAX - digit) { error("Huge number!"); }
         mantissa += digit;
       }
@@ -672,7 +668,7 @@ namespace rf
       }
 
       auto identifier =
-        isUppercase(cStart)
+        isUppercase(initial.character)
           ? Identifier{.variant = Identifier::PascalCase{.value = word}}
           : Identifier{.variant = Identifier::CamelCase{.value = word}};
 
@@ -697,7 +693,7 @@ namespace rf
 
     Portion findPreviousPortion() const
     {
-      return Portion{.first = lStart, .last = lPrevious};
+      return Portion{.first = initial.location, .last = previous.location};
     }
   };
 } // namespace rf
