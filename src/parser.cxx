@@ -2,7 +2,7 @@
 
 #include "lexer.cxx"
 
-#include <memory>
+#include <optional>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -24,7 +24,6 @@ namespace rf
 
     struct Grouping
     {
-      std::unique_ptr<Expression> grouped;
     };
 
     struct PrefixOperation
@@ -39,7 +38,6 @@ namespace rf
         Decrement,
       };
 
-      std::unique_ptr<Expression> operand;
       Variant variant;
     };
 
@@ -51,7 +49,6 @@ namespace rf
         Decrement,
       };
 
-      std::unique_ptr<Expression> operand;
       Variant variant;
     };
 
@@ -79,12 +76,10 @@ namespace rf
         LogicalOr,
       };
 
-      std::unique_ptr<Expression> rightOperand;
-      std::unique_ptr<Expression> leftOperand;
       Variant variant;
     };
 
-    using Variant = std::variant<
+    using Sub = std::variant<
       Literal,
       Accessing,
       Grouping,
@@ -92,7 +87,7 @@ namespace rf
       PostfixOperation,
       InfixOperation>;
 
-    Variant variant;
+    std::vector<Sub> subs;
   };
 
   /// Applications to construct a type.
@@ -171,12 +166,22 @@ namespace rf
   /// Context of the syntactical analysis stage of the compiler.
   struct Parser
   {
+    struct ReadLexeme
+    {
+      std::size_t index;
+      Lexeme lexeme;
+    };
+
     LexicalSource lexical;
     std::vector<Definition> definitions;
+    ReadLexeme current;
+    ReadLexeme previous;
 
     static SyntacticalSource parse(LexicalSource lexical)
     {
-      auto parser = Parser{.lexical = std::move(lexical)};
+      auto initial = lexical.lexemes.empty() ? Lexeme{} : lexical.lexemes[0];
+      auto first = ReadLexeme{.index = 0, .lexeme = initial};
+      auto parser = Parser{.lexical = std::move(lexical), .current = first};
 
       parser.compute();
 
@@ -186,6 +191,25 @@ namespace rf
     }
 
   private:
-    void compute() {}
+    void compute()
+    {
+      while (hasCurrent())
+      {
+        if (auto definition = parseDefinition(); definition)
+        {
+          definitions.emplace_back(std::move(*definition));
+        }
+
+        ThriceException::throwWithPortion(
+          lexical.source,
+          current.lexeme.portion,
+          "error",
+          std::tuple{"Expected a definition in the global scope!"});
+      }
+    }
+
+    std::optional<Definition> parseDefinition() { return std::nullopt; }
+
+    bool hasCurrent() const { return current.index < lexical.lexemes.size(); }
   };
 }
