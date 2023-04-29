@@ -18,69 +18,6 @@
 
 namespace rf
 {
-  /// Reserved identifier that has a specific meaning in Thrice.
-  enum struct Keyword
-  {
-    Const,
-    Auto,
-    Mut,
-  };
-
-  /// Specific pattern of characters that makes up an expression, definition or
-  /// statement in Thrice.
-  enum struct Mark
-  {
-    OpeningBrace,
-    ClosingBrace,
-    OpeningParenthesis,
-    ClosingParenthesis,
-    Semicolon,
-    Star,
-    Slash,
-    Percent,
-    Plus,
-    Minus,
-    Tilde,
-    Caret,
-
-    Equal,
-    EqualEqual,
-    Ampersand,
-    AmpersandAmpersand,
-    Pipe,
-    PipePipe,
-
-    Exclamation,
-    ExclamationEqual,
-
-    Left,
-    LeftEqual,
-    LeftLeft,
-    Right,
-    RightEqual,
-    RightRight,
-  };
-
-  /// Name of a symbol in a Thrice program.
-  struct Identifier
-  {
-    enum Variant
-    {
-      Uppercase,
-      Lowercase
-    };
-
-    std::string_view value;
-    Variant variant;
-  };
-
-  /// Constant number that is embedded in a Thrice program.
-  struct Number
-  {
-    std::uint64_t mantissa;
-    std::int32_t exponent;
-  };
-
   /// Positional information of a character in a Thrice source.
   struct Location
   {
@@ -341,6 +278,64 @@ namespace rf
   /// Indivisible structural element of a Thrice source.
   struct Lexeme
   {
+    enum Keyword
+    {
+      Const,
+      Auto,
+      Mut,
+    };
+
+    enum Mark
+    {
+      OpeningBrace,
+      ClosingBrace,
+      OpeningParenthesis,
+      ClosingParenthesis,
+      Semicolon,
+      Star,
+      Slash,
+      Percent,
+      Plus,
+      Minus,
+      Tilde,
+      Caret,
+
+      Equal,
+      EqualEqual,
+      Ampersand,
+      AmpersandAmpersand,
+      Pipe,
+      PipePipe,
+
+      Exclamation,
+      ExclamationEqual,
+
+      Left,
+      LeftEqual,
+      LeftLeft,
+      Right,
+      RightEqual,
+      RightRight,
+    };
+
+    enum Casing
+    {
+      Pascal,
+      Camel,
+    };
+
+    struct Identifier
+    {
+      std::string_view value;
+      Casing casing;
+    };
+
+    struct Number
+    {
+      std::uint64_t mantissa;
+      std::int32_t exponent;
+    };
+
     using Variant = std::variant<Keyword, Mark, Identifier, Number>;
 
     template<class... Lambdas>
@@ -393,16 +388,17 @@ namespace rf
   private:
     static constexpr auto decimalBase = std::int32_t{10};
 
-    static void addToMark(Mark& mark, int amount = 1)
+    static void addToMark(Lexeme::Mark& mark, int amount = 1)
     {
-      mark = static_cast<Mark>(static_cast<int>(mark) + amount);
+      mark = static_cast<Lexeme::Mark>(static_cast<int>(mark) + amount);
     }
 
-    static std::optional<Keyword> convertToKeyword(std::string_view word)
+    static std::optional<Lexeme::Keyword>
+    convertToKeyword(std::string_view word)
     {
-      if (word == "const") { return Keyword::Const; }
-      if (word == "auto") { return Keyword::Auto; }
-      if (word == "mut") { return Keyword::Mut; }
+      if (word == "const") { return Lexeme::Const; }
+      if (word == "auto") { return Lexeme::Auto; }
+      if (word == "mut") { return Lexeme::Mut; }
       return std::nullopt;
     }
 
@@ -442,8 +438,8 @@ namespace rf
       {
         // Since all lexemes are at least 1 character long, the current
         // character is for sure included in the next lexeme and it is the
-        // initial character of the next lexeme; thus, take it unconditionally
-        // and remember the next lexeme's initial.
+        // initial character of the next lexeme; thus, take it
+        // unconditionally and remember the next lexeme's initial.
         advance();
         initial = previous;
 
@@ -456,24 +452,24 @@ namespace rf
           // Advance over the characters upto a newline; then, take it.
           while (!take('\n')) { advance(); }
           break;
-        case '{': lexMark(Mark::OpeningBrace); break;
-        case '}': lexMark(Mark::ClosingBrace); break;
-        case '(': lexMark(Mark::OpeningParenthesis); break;
-        case ')': lexMark(Mark::ClosingParenthesis); break;
-        case ';': lexMark(Mark::Semicolon); break;
-        case '*': lexMark(Mark::Star); break;
-        case '/': lexMark(Mark::Slash); break;
-        case '%': lexMark(Mark::Percent); break;
-        case '+': lexMark(Mark::Plus); break;
-        case '-': lexMark(Mark::Minus); break;
-        case '~': lexMark(Mark::Tilde); break;
-        case '^': lexMark(Mark::Caret); break;
-        case '=': lexMark(Mark::Equal, MarkVariant::Double); break;
-        case '&': lexMark(Mark::Ampersand, MarkVariant::Double); break;
-        case '|': lexMark(Mark::Pipe, MarkVariant::Double); break;
-        case '!': lexMark(Mark::Exclamation, MarkVariant::Equal); break;
-        case '<': lexMark(Mark::Left, MarkVariant::EqualOrDouble); break;
-        case '>': lexMark(Mark::Right, MarkVariant::EqualOrDouble); break;
+        case '{': lexMark(Lexeme::OpeningBrace); break;
+        case '}': lexMark(Lexeme::ClosingBrace); break;
+        case '(': lexMark(Lexeme::OpeningParenthesis); break;
+        case ')': lexMark(Lexeme::ClosingParenthesis); break;
+        case ';': lexMark(Lexeme::Semicolon); break;
+        case '*': lexMark(Lexeme::Star); break;
+        case '/': lexMark(Lexeme::Slash); break;
+        case '%': lexMark(Lexeme::Percent); break;
+        case '+': lexMark(Lexeme::Plus); break;
+        case '-': lexMark(Lexeme::Minus); break;
+        case '~': lexMark(Lexeme::Tilde); break;
+        case '^': lexMark(Lexeme::Caret); break;
+        case '=': lexMark(Lexeme::Equal, MarkVariant::Double); break;
+        case '&': lexMark(Lexeme::Ampersand, MarkVariant::Double); break;
+        case '|': lexMark(Lexeme::Pipe, MarkVariant::Double); break;
+        case '!': lexMark(Lexeme::Exclamation, MarkVariant::Equal); break;
+        case '<': lexMark(Lexeme::Left, MarkVariant::EqualOrDouble); break;
+        case '>': lexMark(Lexeme::Right, MarkVariant::EqualOrDouble); break;
         default:
           if (isDigit(initial.character))
           {
@@ -538,7 +534,7 @@ namespace rf
       EqualOrDouble,
     };
 
-    void lexMark(Mark mark, MarkVariant variant = MarkVariant::Single)
+    void lexMark(Lexeme::Mark mark, MarkVariant variant = MarkVariant::Single)
     {
       switch (variant)
       {
@@ -561,14 +557,15 @@ namespace rf
 
     void lexNumber()
     {
-      auto number = Number{.mantissa = convertToDigit(initial.character)};
+      auto number =
+        Lexeme::Number{.mantissa = convertToDigit(initial.character)};
 
       // Lex the whole part.
       lexMantissa(number.mantissa);
 
       // Lex the fractional part.
-      // Cache current location to roll back the taken '.'. It can be a member
-      // access instead of fraction separator.
+      // Cache current location to roll back the taken '.'. It can be a
+      // member access instead of fraction separator.
       if (auto previousAtDot = previous, currentAtDot = current; take('.'))
       {
         if (!isDigit(current.character))
@@ -657,10 +654,10 @@ namespace rf
 
       lexemes.push_back(Lexeme{
         .variant =
-          Identifier{
+          Lexeme::Identifier{
             .value = word,
-            .variant = isUppercase(initial.character) ? Identifier::Uppercase
-                                                      : Identifier::Lowercase},
+            .casing =
+              isUppercase(initial.character) ? Lexeme::Pascal : Lexeme::Camel},
         .portion = portion});
     }
 
