@@ -17,6 +17,16 @@ namespace rf
       Number number;
     };
 
+    struct Accessing
+    {
+      Identifier accessed;
+    };
+
+    struct Grouping
+    {
+      std::unique_ptr<Expression> grouped;
+    };
+
     struct PrefixOperation
     {
       enum Variant
@@ -25,6 +35,20 @@ namespace rf
         Negation,
         BitwiseNot,
         LogicalNot,
+        Increment,
+        Decrement,
+      };
+
+      std::unique_ptr<Expression> operand;
+      Variant variant;
+    };
+
+    struct PostfixOperation
+    {
+      enum Variant
+      {
+        Increment,
+        Decrement,
       };
 
       std::unique_ptr<Expression> operand;
@@ -60,7 +84,13 @@ namespace rf
       Variant variant;
     };
 
-    using Variant = std::variant<Literal, PrefixOperation, InfixOperation>;
+    using Variant = std::variant<
+      Literal,
+      Accessing,
+      Grouping,
+      PrefixOperation,
+      PostfixOperation,
+      InfixOperation>;
 
     Variant variant;
   };
