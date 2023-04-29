@@ -102,7 +102,7 @@ namespace rf
 
     struct Binding
     {
-      Type type;
+      Formula type;
       Identifier name;
     };
 

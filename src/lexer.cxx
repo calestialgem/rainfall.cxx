@@ -63,22 +63,13 @@ namespace rf
   /// Name of a symbol in a Thrice program.
   struct Identifier
   {
-    struct Underscore
+    enum Variant
     {
+      Uppercase,
+      Lowercase
     };
 
-    struct PascalCase
-    {
-      std::string_view value;
-    };
-
-    struct CamelCase
-    {
-      std::string_view value;
-    };
-
-    using Variant = std::variant<Underscore, CamelCase, PascalCase>;
-
+    std::string_view value;
     Variant variant;
   };
 
@@ -481,11 +472,6 @@ namespace rf
         case '!': lexMark(Mark::Exclamation, MarkVariant::Equal); break;
         case '<': lexMark(Mark::Left, MarkVariant::EqualOrDouble); break;
         case '>': lexMark(Mark::Right, MarkVariant::EqualOrDouble); break;
-        case '_':
-          lexemes.push_back(Lexeme{
-            .variant = Identifier{.variant = Identifier::Underscore{}},
-            .portion = findPreviousPortion()});
-          break;
         default:
           if (isDigit(initial.character))
           {
@@ -667,12 +653,13 @@ namespace rf
         return;
       }
 
-      auto identifier =
-        isUppercase(initial.character)
-          ? Identifier{.variant = Identifier::PascalCase{.value = word}}
-          : Identifier{.variant = Identifier::CamelCase{.value = word}};
-
-      lexemes.push_back(Lexeme{.variant = identifier, .portion = portion});
+      lexemes.push_back(Lexeme{
+        .variant =
+          Identifier{
+            .value = word,
+            .variant = isUppercase(initial.character) ? Identifier::Uppercase
+                                                      : Identifier::Lowercase},
+        .portion = portion});
     }
 
     [[noreturn]] void error(
