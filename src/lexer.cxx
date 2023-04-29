@@ -63,13 +63,22 @@ namespace rf
   /// Name of a symbol in a Thrice program.
   struct Identifier
   {
-    enum Variant
+    struct Underscore
     {
-      Uppercase,
-      Lowercase,
     };
 
-    std::string_view value;
+    struct PascalCase
+    {
+      std::string_view value;
+    };
+
+    struct CamelCase
+    {
+      std::string_view value;
+    };
+
+    using Variant = std::variant<Underscore, CamelCase, PascalCase>;
+
     Variant variant;
   };
 
@@ -471,6 +480,11 @@ namespace rf
         case '!': lexMark(Mark::Exclamation, MarkVariant::EQUAL); break;
         case '<': lexMark(Mark::Left, MarkVariant::EQUAL_OR_DOUBLE); break;
         case '>': lexMark(Mark::Right, MarkVariant::EQUAL_OR_DOUBLE); break;
+        case '_':
+          lexemes.push_back(Lexeme{
+            .variant = Identifier{.variant = Identifier::Underscore{}},
+            .portion = findPreviousPortion()});
+          break;
         default:
           if (isDigit(cStart))
           {
@@ -650,15 +664,19 @@ namespace rf
 
       auto portion = findPreviousPortion();
       auto word = portion.findValue(source.contents);
-      auto keyword = convertToKeyword(word);
-      auto identifier =
-        isUppercase(cStart) ? Identifier::Uppercase : Identifier::Lowercase;
-      auto variant =
-        keyword
-          ? *keyword
-          : Lexeme::Variant{Identifier{.value = word, .variant = identifier}};
 
-      lexemes.push_back(Lexeme{.variant = variant, .portion = portion});
+      if (auto keyword = convertToKeyword(word); keyword)
+      {
+        lexemes.push_back(Lexeme{.variant = *keyword, .portion = portion});
+        return;
+      }
+
+      auto identifier =
+        isUppercase(cStart)
+          ? Identifier{.variant = Identifier::PascalCase{.value = word}}
+          : Identifier{.variant = Identifier::CamelCase{.value = word}};
+
+      lexemes.push_back(Lexeme{.variant = identifier, .portion = portion});
     }
 
     [[noreturn]] void error(
