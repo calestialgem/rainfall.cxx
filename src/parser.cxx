@@ -68,27 +68,14 @@ namespace rf
   /// Applications to construct a type.
   struct Formula
   {
-    struct Const
+    enum Qualifier
     {
+      Const,
+      Mut,
+      Ref,
+      RefMut,
+      Plain,
     };
-
-    struct Mut
-    {
-    };
-
-    struct Ref
-    {
-    };
-
-    struct RefMut
-    {
-    };
-
-    struct Plain
-    {
-    };
-
-    using Qualifier = std::variant<Const, Mut, Ref, RefMut, Plain>;
 
     struct Inferred
     {
