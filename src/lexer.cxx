@@ -23,6 +23,7 @@ namespace rf
   {
     Const,
     Auto,
+    Mut,
   };
 
   /// Specific pattern of characters that makes up an expression, definition or
@@ -401,6 +402,7 @@ namespace rf
     {
       if (word == "const") { return Keyword::Const; }
       if (word == "auto") { return Keyword::Auto; }
+      if (word == "mut") { return Keyword::Mut; }
       return std::nullopt;
     }
 
