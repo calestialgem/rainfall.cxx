@@ -277,132 +277,164 @@ namespace rf
 
   struct Const
   {
+    Portion portion;
   };
 
   struct Auto
   {
+    Portion portion;
   };
 
   struct Mut
   {
+    Portion portion;
   };
 
   struct OpeningBrace
   {
+    Portion portion;
   };
 
   struct ClosingBrace
   {
+    Portion portion;
   };
 
   struct OpeningParenthesis
   {
+    Portion portion;
   };
 
   struct ClosingParenthesis
   {
+    Portion portion;
   };
 
   struct Semicolon
   {
+    Portion portion;
   };
 
   struct Star
   {
+    Portion portion;
   };
 
   struct Slash
   {
+    Portion portion;
   };
 
   struct Percent
   {
+    Portion portion;
   };
 
   struct Plus
   {
+    Portion portion;
   };
 
   struct Minus
   {
+    Portion portion;
   };
 
   struct Tilde
   {
+    Portion portion;
   };
 
   struct Caret
   {
+    Portion portion;
   };
 
   struct Equal
   {
+    Portion portion;
   };
 
   struct EqualEqual
   {
+    Portion portion;
   };
 
   struct Ampersand
   {
+    Portion portion;
   };
 
   struct AmpersandAmpersand
   {
+    Portion portion;
   };
 
   struct Pipe
   {
+    Portion portion;
   };
 
   struct PipePipe
   {
+    Portion portion;
   };
 
   struct Exclamation
   {
+    Portion portion;
   };
 
   struct ExclamationEqual
   {
+    Portion portion;
   };
 
   struct Left
   {
+    Portion portion;
   };
 
   struct LeftEqual
   {
+    Portion portion;
   };
 
   struct LeftLeft
   {
+    Portion portion;
   };
 
   struct Right
   {
+    Portion portion;
   };
 
   struct RightEqual
   {
+    Portion portion;
   };
 
   struct RightRight
   {
+    Portion portion;
   };
 
   struct PascalCaseIdentifier
   {
+    Portion portion;
     std::string_view value;
   };
 
   struct CamelCaseIdentifier
   {
+    Portion portion;
     std::string_view value;
   };
 
   struct Number
   {
+    Portion portion;
     std::uint64_t mantissa;
     std::int32_t exponent;
   };
@@ -442,6 +474,11 @@ namespace rf
     CamelCaseIdentifier,
     Number>;
 
+  Portion findPortion(Lexeme lexeme)
+  {
+    return std::visit([&](auto l) { return l.portion; }, lexeme);
+  }
+
   /// Representation of a Thrice source file that went through the lexical
   /// analysis stage of the compiler.
   struct LexicalSource
@@ -479,16 +516,6 @@ namespace rf
 
   private:
     static constexpr auto decimalBase = std::int32_t{10};
-
-    static Lexeme convertToLexeme(std::string_view word)
-    {
-      if (word == "const") { return Const{}; }
-      if (word == "auto") { return Auto{}; }
-      if (word == "mut") { return Mut{}; }
-
-      if (isUppercase(word[0])) { return PascalCaseIdentifier{.value = word}; }
-      return CamelCaseIdentifier{.value = word};
-    }
 
     static bool isWordPart(char character)
     {
@@ -621,29 +648,34 @@ namespace rf
     template<typename TSingle>
     void lexSingleMark()
     {
-      lexemes.push_back(Lexeme{TSingle{}});
+      lexemes.push_back(Lexeme{TSingle{.portion = findPreviousPortion()}});
     }
 
     template<typename TSingle, typename TExtended>
     void lexExtensibleMark()
     {
-      lexemes.push_back(take('=') ? TExtended{} : Lexeme{TSingle{}});
+      lexemes.push_back(
+        take('=') ? TExtended{.portion = findPreviousPortion()}
+                  : Lexeme{TSingle{.portion = findPreviousPortion()}});
     }
 
     template<typename TSingle, typename TRepeated>
     void lexRepeatableMark()
     {
       lexemes.push_back(
-        take(initial.character) ? TRepeated{} : Lexeme{TSingle{}});
+        take(initial.character)
+          ? TRepeated{.portion = findPreviousPortion()}
+          : Lexeme{TSingle{.portion = findPreviousPortion()}});
     }
 
     template<typename TSingle, typename TExtended, typename TRepeated>
     void lexExtensibleOrRepeatableMark()
     {
       lexemes.push_back(
-        take('=')                 ? TExtended{}
-        : take(initial.character) ? TRepeated{}
-                                  : Lexeme{TSingle{}});
+        take('=') ? TExtended{.portion = findPreviousPortion()}
+        : take(initial.character)
+          ? TRepeated{.portion = findPreviousPortion()}
+          : Lexeme{TSingle{.portion = findPreviousPortion()}});
     }
 
     void lexNumber()
@@ -663,6 +695,7 @@ namespace rf
           // Rollback the taken '.' and end the number.
           previous = previousAtDot;
           current = currentAtDot;
+          number.portion = findPreviousPortion();
           lexemes.emplace_back(number);
         }
 
@@ -702,6 +735,7 @@ namespace rf
       if (exponent < INT32_MIN - number.exponent) { error("Huge number!"); }
       number.exponent += exponent;
 
+      number.portion = findPreviousPortion();
       lexemes.emplace_back(number);
     }
 
@@ -733,7 +767,23 @@ namespace rf
 
       auto portion = findPreviousPortion();
       auto word = portion.findValue(source.contents);
-      lexemes.push_back(convertToLexeme(word));
+
+      if (word == "const") { lexemes.emplace_back(Const{.portion = portion}); }
+      else if (word == "auto")
+      {
+        lexemes.emplace_back(Auto{.portion = portion});
+      }
+      else if (word == "mut") { lexemes.emplace_back(Mut{.portion = portion}); }
+      else if (isUppercase(word[0]))
+      {
+        lexemes.emplace_back(
+          PascalCaseIdentifier{.portion = portion, .value = word});
+      }
+      else
+      {
+        lexemes.emplace_back(
+          CamelCaseIdentifier{.portion = portion, .value = word});
+      }
     }
 
     [[noreturn]] void error(

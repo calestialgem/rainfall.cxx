@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lexer.cxx"
+#include "utility.cxx"
 
 #include <optional>
 #include <utility>
@@ -9,85 +10,210 @@
 
 namespace rf
 {
+  struct PromotionOperation;
+  struct NegationOperation;
+  struct BitwiseNotOperation;
+  struct LogicalNotOperation;
+  struct PrefixIncrementOperation;
+  struct PrefixDecrementOperation;
+  struct PostfixIncrementOperation;
+  struct PostfixDecrementOperation;
+  struct MultiplicationOperation;
+  struct DivisionOperation;
+  struct ReminderOperation;
+  struct AdditionOperation;
+  struct SubtractionOperation;
+  struct BitwiseAndOperation;
+  struct BitwiseOrOperation;
+  struct BitwiseXorOperation;
+  struct LeftShiftOperation;
+  struct RightShiftOperation;
+  struct EqualOperation;
+  struct NotEqualOperation;
+  struct LessOperation;
+  struct GreaterOperation;
+  struct LessOrEqualOperation;
+  struct GreaterOrEqualOperation;
+  struct LogicalAndOperation;
+  struct LogicalOrOperation;
+
   /// Instructions to compute a value.
-  struct Expression
+  using Expression = std::variant<
+    Number,
+    CamelCaseIdentifier,
+    PromotionOperation,
+    NegationOperation,
+    BitwiseNotOperation,
+    LogicalNotOperation,
+    PrefixIncrementOperation,
+    PrefixDecrementOperation,
+    PostfixIncrementOperation,
+    PostfixDecrementOperation,
+    MultiplicationOperation,
+    DivisionOperation,
+    ReminderOperation,
+    AdditionOperation,
+    SubtractionOperation,
+    BitwiseAndOperation,
+    BitwiseOrOperation,
+    BitwiseXorOperation,
+    LeftShiftOperation,
+    RightShiftOperation,
+    EqualOperation,
+    NotEqualOperation,
+    LessOperation,
+    GreaterOperation,
+    LessOrEqualOperation,
+    GreaterOrEqualOperation,
+    LogicalAndOperation,
+    LogicalOrOperation>;
+
+  struct PromotionOperation
   {
-    struct Literal
-    {
-      Number number;
-    };
+    Box<Expression> operand;
+  };
 
-    struct Accessing
-    {
-      Identifier accessed;
-    };
+  struct NegationOperation
+  {
+    Box<Expression> operand;
+  };
 
-    struct Grouping
-    {
-    };
+  struct BitwiseNotOperation
+  {
+    Box<Expression> operand;
+  };
 
-    struct PrefixOperation
-    {
-      enum Variant
-      {
-        Promotion,
-        Negation,
-        BitwiseNot,
-        LogicalNot,
-        Increment,
-        Decrement,
-      };
+  struct LogicalNotOperation
+  {
+    Box<Expression> operand;
+  };
 
-      Variant variant;
-    };
+  struct PrefixIncrementOperation
+  {
+    Box<Expression> operand;
+  };
 
-    struct PostfixOperation
-    {
-      enum Variant
-      {
-        Increment,
-        Decrement,
-      };
+  struct PrefixDecrementOperation
+  {
+    Box<Expression> operand;
+  };
 
-      Variant variant;
-    };
+  struct PostfixIncrementOperation
+  {
+    Box<Expression> operand;
+  };
 
-    struct InfixOperation
-    {
-      enum Variant
-      {
-        Multiplication,
-        Division,
-        Reminder,
-        Addition,
-        Subtraction,
-        BitwiseAnd,
-        BitwiseOr,
-        BitwiseXor,
-        LeftShift,
-        RightShift,
-        Equal,
-        NotEqual,
-        Less,
-        Greater,
-        LessOrEqual,
-        GreaterOrEqual,
-        LogicalAnd,
-        LogicalOr,
-      };
+  struct PostfixDecrementOperation
+  {
+    Box<Expression> operand;
+  };
 
-      Variant variant;
-    };
+  struct MultiplicationOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
 
-    using Sub = std::variant<
-      Literal,
-      Accessing,
-      Grouping,
-      PrefixOperation,
-      PostfixOperation,
-      InfixOperation>;
+  struct DivisionOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
 
-    std::vector<Sub> subs;
+  struct ReminderOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct AdditionOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct SubtractionOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct BitwiseAndOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct BitwiseOrOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct BitwiseXorOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct LeftShiftOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct RightShiftOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct EqualOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct NotEqualOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct LessOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct GreaterOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct LessOrEqualOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct GreaterOrEqualOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct LogicalAndOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
+  };
+
+  struct LogicalOrOperation
+  {
+    Box<Expression> leftOperand;
+    Box<Expression> rightOperand;
   };
 
   /// Applications to construct a type.
@@ -102,57 +228,28 @@ namespace rf
       Plain,
     };
 
-    struct Inferred
-    {
-    };
-
-    struct Named
-    {
-      Identifier name;
-    };
-
-    using Base = std::variant<Inferred, Named>;
+    using Base = std::variant<Auto, PascalCaseIdentifier>;
 
     Qualifier qualifier;
     Base base;
   };
 
+  struct Binding;
+
   /// Pattern, which can be matched to a value or bind a value to a variable.
-  struct Pattern
+  using Pattern = std::variant<Expression, Formula, Binding>;
+
+  struct Binding
   {
-    struct Type
-    {
-      Formula expected;
-    };
-
-    struct Binding
-    {
-      Formula type;
-      Identifier name;
-    };
-
-    struct Matching
-    {
-      Expression matched;
-    };
-
-    using Variant = std::variant<Type, Binding, Matching>;
-
-    Variant variant;
+    Formula type;
+    CamelCaseIdentifier name;
   };
 
   /// Entities in a Thrice program that define the symbols in the program.
   struct Definition
   {
-    struct Binding
-    {
-      Pattern pattern;
-      Expression bound;
-    };
-
-    using Variant = std::variant<Binding>;
-
-    Variant variant;
+    Pattern pattern;
+    Expression bound;
   };
 
   /// Representation of a Thrice source file that when through the syntactical
@@ -169,7 +266,7 @@ namespace rf
     struct ReadLexeme
     {
       std::size_t index;
-      Lexeme lexeme;
+      std::optional<Lexeme> lexeme;
     };
 
     LexicalSource lexical;
@@ -179,8 +276,9 @@ namespace rf
 
     static SyntacticalSource parse(LexicalSource lexical)
     {
-      auto initial = lexical.lexemes.empty() ? Lexeme{} : lexical.lexemes[0];
-      auto first = ReadLexeme{.index = 0, .lexeme = initial};
+      auto first = ReadLexeme{
+        .lexeme = lexical.lexemes.empty() ? std::nullopt
+                                          : std::optional{lexical.lexemes[0]}};
       auto parser = Parser{.lexical = std::move(lexical), .current = first};
 
       parser.compute();
@@ -193,16 +291,17 @@ namespace rf
   private:
     void compute()
     {
-      while (hasCurrent())
+      while (current.lexeme)
       {
         if (auto definition = parseDefinition(); definition)
         {
           definitions.emplace_back(std::move(*definition));
+          continue;
         }
 
         ThriceException::throwWithPortion(
           lexical.source,
-          current.lexeme.portion,
+          findPortion(*current.lexeme),
           "error",
           std::tuple{"Expected a definition in the global scope!"});
       }
@@ -210,6 +309,28 @@ namespace rf
 
     std::optional<Definition> parseDefinition() { return std::nullopt; }
 
-    bool hasCurrent() const { return current.index < lexical.lexemes.size(); }
+    std::optional<Formula> parseFormula() { return std::nullopt; }
+
+    std::optional<Expression> parseExpression() { return std::nullopt; }
+
+    template<typename TLexeme>
+    std::optional<TLexeme> take()
+    {
+      if (!current.lexeme || !std::holds_alternative<TLexeme>(*current.lexeme))
+      {
+        return std::nullopt;
+      }
+      advance();
+      return std::get<TLexeme>(current.lexeme);
+    }
+
+    void advance()
+    {
+      previous = current;
+      if (++current.index < lexical.lexemes.size())
+      {
+        current.lexeme = lexical.lexemes[current.index];
+      }
+    }
   };
 }
