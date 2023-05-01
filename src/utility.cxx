@@ -29,7 +29,7 @@ namespace rf
 
     constexpr ~Box() noexcept
     {
-      if (pointer) { return; }
+      if (!pointer) { return; }
       pointer->~TElement();
       delete pointer;
     }
