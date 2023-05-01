@@ -309,6 +309,23 @@ namespace rf
 
     std::optional<Definition> parseDefinition() { return std::nullopt; }
 
+    std::optional<Pattern> parsePattern()
+    {
+      if (auto f = parseFormula(); f)
+      {
+        if (auto i = take<CamelCaseIdentifier>(); i)
+        {
+          return Binding{.type = *f, .name = *i};
+        }
+
+        return *f;
+      }
+
+      if (auto e = parseExpression(); e) { return *e; }
+
+      return std::nullopt;
+    }
+
     std::optional<Formula> parseFormula()
     {
       auto qualifier = parseQualifier();
