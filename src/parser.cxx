@@ -266,6 +266,53 @@ namespace rf
       expression);
   }
 
+  auto& operator<<(auto& out, Expression const& expression)
+  {
+    std::visit(
+      [&](auto const& e)
+      {
+        using TExpression = std::decay_t<decltype(e)>;
+        if constexpr (std::is_same_v<TExpression, Grouping>)
+        {
+          out << e.opening << *e.grouped << e.closing;
+        }
+        else if constexpr (
+          std::is_same_v<TExpression, PromotionOperation> ||
+          std::is_same_v<TExpression, NegationOperation> ||
+          std::is_same_v<TExpression, BitwiseNotOperation> ||
+          std::is_same_v<TExpression, LogicalNotOperation>)
+        {
+          out << '(' << e.op << *e.operand << ')';
+        }
+        else if constexpr (
+          std::is_same_v<TExpression, MultiplicationOperation> ||
+          std::is_same_v<TExpression, DivisionOperation> ||
+          std::is_same_v<TExpression, ReminderOperation> ||
+          std::is_same_v<TExpression, AdditionOperation> ||
+          std::is_same_v<TExpression, SubtractionOperation> ||
+          std::is_same_v<TExpression, BitwiseAndOperation> ||
+          std::is_same_v<TExpression, BitwiseOrOperation> ||
+          std::is_same_v<TExpression, BitwiseXorOperation> ||
+          std::is_same_v<TExpression, LeftShiftOperation> ||
+          std::is_same_v<TExpression, RightShiftOperation> ||
+          std::is_same_v<TExpression, EqualOperation> ||
+          std::is_same_v<TExpression, NotEqualOperation> ||
+          std::is_same_v<TExpression, LessOperation> ||
+          std::is_same_v<TExpression, GreaterOperation> ||
+          std::is_same_v<TExpression, LessOrEqualOperation> ||
+          std::is_same_v<TExpression, GreaterOrEqualOperation> ||
+          std::is_same_v<TExpression, LogicalAndOperation> ||
+          std::is_same_v<TExpression, LogicalOrOperation>)
+        {
+          out << '(' << *e.leftOperand << ' ' << Lexeme{e.op} << ' '
+              << *e.rightOperand << ')';
+        }
+        else { out << Lexeme{e}; }
+      },
+      expression);
+    return out;
+  }
+
   struct RefMut;
 
   using Qualifier = std::variant<Const, Mut, Ampersand, RefMut>;
@@ -291,11 +338,33 @@ namespace rf
       qualifier);
   }
 
+  auto& operator<<(auto& out, Qualifier const& qualifier)
+  {
+    std::visit(
+      [&](auto const& q)
+      {
+        using TQualifier = std::decay_t<decltype(q)>;
+        if constexpr (std::is_same_v<TQualifier, RefMut>)
+        {
+          out << Lexeme{q.ref} << ' ' << Lexeme{q.mut};
+        }
+        else { out << Lexeme{q}; }
+      },
+      qualifier);
+    return out;
+  }
+
   using Base = std::variant<Auto, PascalCaseIdentifier>;
 
   Portion findPortion(Base const& base)
   {
     return std::visit([](auto const& b) { return b.portion; }, base);
+  }
+
+  auto& operator<<(auto& out, Base const& base)
+  {
+    std::visit([&](auto const& b) { out << Lexeme{b}; }, base);
+    return out;
   }
 
   /// Applications to construct a type.
@@ -312,6 +381,13 @@ namespace rf
 
     auto qualifierPortion = findPortion(*formula.qualifier);
     return Portion::merge(qualifierPortion, basePortion);
+  }
+
+  auto& operator<<(auto& out, Formula const& formula)
+  {
+    if (formula.qualifier) { out << *formula.qualifier; }
+    out << ' ' << formula.base;
+    return out;
   }
 
   struct Binding;
@@ -340,6 +416,22 @@ namespace rf
       pattern);
   }
 
+  auto& operator<<(auto& out, Pattern const& pattern)
+  {
+    std::visit(
+      [&](auto const& p)
+      {
+        using TPattern = std::decay_t<decltype(p)>;
+        if constexpr (std::is_same_v<TPattern, Binding>)
+        {
+          out << p.type << ' ' << Lexeme{p.name};
+        }
+        else { out << p; }
+      },
+      pattern);
+    return out;
+  }
+
   /// Entities in a Thrice program that define the symbols in the program.
   struct Definition
   {
@@ -353,6 +445,13 @@ namespace rf
   {
     return Portion::merge(
       findPortion(definition.pattern), definition.terminator.portion);
+  }
+
+  auto& operator<<(auto& out, Definition const& definition)
+  {
+    out << definition.pattern << ' ' << definition.separator << ' '
+        << definition.bound << definition.terminator;
+    return out;
   }
 
   /// Representation of a Thrice source file that when through the syntactical

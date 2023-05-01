@@ -486,7 +486,6 @@ namespace rf
 
   auto& operator<<(auto& out, Lexeme const& lexeme)
   {
-    out << '`';
     std::visit(
       [&](auto const& l)
       {
@@ -551,7 +550,7 @@ namespace rf
         }
       },
       lexeme);
-    return out << '`';
+    return out;
   }
 
   /// Representation of a Thrice source file that went through the lexical

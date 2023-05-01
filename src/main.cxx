@@ -49,6 +49,11 @@ int main(int argc, char const* const* argv)
     auto mainSource = arguments.loadMainSource();
     auto mainLexemes = rf::Lexer::lex(mainSource);
     auto mainDefinitions = rf::Parser::parse(mainLexemes);
+
+    for (auto const& definition: mainDefinitions.definitions)
+    {
+      std::cout << definition << std::endl;
+    }
   }
   catch (std::exception const& exception)
   {
