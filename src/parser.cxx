@@ -424,7 +424,7 @@ namespace rf
         auto separator = take<Equal>();
         if (!separator)
         {
-          reportIncomplete(findPortion(*pattern), "definition", "=");
+          reportIncomplete(findPortion(*pattern), "definition", "`=`");
         }
 
         auto bound = parseExpression();
@@ -442,7 +442,7 @@ namespace rf
           reportIncomplete(
             Portion::merge(findPortion(*pattern), findPortion(*bound)),
             "definition",
-            ";");
+            "`;`");
         }
 
         return Definition{
@@ -512,7 +512,217 @@ namespace rf
       return std::nullopt;
     }
 
-    std::optional<Expression> parseExpression() { return std::nullopt; }
+    std::optional<Expression> parseExpression() { return parseLogicalOr(); }
+
+    std::optional<Expression> parseLogicalOr()
+    {
+      return parseInfixOperation<
+        &Parser::parseLogicalAnd,
+        LogicalOrOperation>();
+    }
+
+    std::optional<Expression> parseLogicalAnd()
+    {
+      return parseInfixOperation<
+        &Parser::parseBitwiseOr,
+        LogicalAndOperation>();
+    }
+
+    std::optional<Expression> parseBitwiseOr()
+    {
+      return parseInfixOperation<
+        &Parser::parseBitwiseXor,
+        BitwiseOrOperation>();
+    }
+
+    std::optional<Expression> parseBitwiseXor()
+    {
+      return parseInfixOperation<
+        &Parser::parseBitwiseAnd,
+        BitwiseXorOperation>();
+    }
+
+    std::optional<Expression> parseBitwiseAnd()
+    {
+      return parseInfixOperation<
+        &Parser::parseEqualityComparison,
+        BitwiseAndOperation>();
+    }
+
+    std::optional<Expression> parseEqualityComparison()
+    {
+      return parseInfixOperation<
+        &Parser::parseOrderComparison,
+        EqualOperation,
+        NotEqualOperation>();
+    }
+
+    std::optional<Expression> parseOrderComparison()
+    {
+      return parseInfixOperation<
+        &Parser::parseShift,
+        LessOperation,
+        GreaterOperation,
+        LessOrEqualOperation,
+        GreaterOrEqualOperation>();
+    }
+
+    std::optional<Expression> parseShift()
+    {
+      return parseInfixOperation<
+        &Parser::parseAdditive,
+        LeftShiftOperation,
+        RightShiftOperation>();
+    }
+
+    std::optional<Expression> parseAdditive()
+    {
+      return parseInfixOperation<
+        &Parser::parseMultiplicative,
+        AdditionOperation,
+        SubtractionOperation>();
+    }
+
+    std::optional<Expression> parseMultiplicative()
+    {
+      return parseInfixOperation<
+        &Parser::parseUnary,
+        MultiplicationOperation,
+        DivisionOperation,
+        ReminderOperation>();
+    }
+
+    enum struct InfixOperationParseResult
+    {
+      NotFound,
+      Parsed,
+    };
+
+    template<auto operandParser, typename... TOperations>
+    std::optional<Expression> parseInfixOperation()
+    {
+      auto leftOperand = (this->*operandParser)();
+      if (!leftOperand) { return std::nullopt; }
+
+      auto result = InfixOperationParseResult::NotFound;
+
+      ((parseSingleInfixOperation<
+         &Parser::parseInfixOperation<operandParser, TOperations...>,
+         TOperations>(result, leftOperand)),
+       ...);
+
+      return leftOperand;
+    }
+
+    template<auto operandParser, typename TOperation>
+    void parseSingleInfixOperation(
+      InfixOperationParseResult& result, std::optional<Expression>& leftOperand)
+    {
+      if (result == InfixOperationParseResult::Parsed) { return; }
+
+      auto op = take<std::decay_t<decltype(TOperation::op)>>();
+      if (!op) { return; }
+
+      auto rightOperand = (this->*operandParser)();
+      if (!rightOperand)
+      {
+        reportIncomplete(
+          Portion::merge(findPortion(*leftOperand), op->portion),
+          "infix operation",
+          "expression");
+      }
+
+      leftOperand = std::move(TOperation{
+        .leftOperand = std::move(*leftOperand),
+        .op = *op,
+        .rightOperand = std::move(*rightOperand)});
+
+      result = InfixOperationParseResult::Parsed;
+    }
+
+    std::optional<Expression> parseUnary()
+    {
+      if (auto op = take<Plus>(); op)
+      {
+        auto operand = parseUnary();
+        if (!operand)
+        {
+          reportIncomplete(op->portion, "promotion", "expression");
+        }
+
+        return PromotionOperation{.op = *op, .operand = std::move(*operand)};
+      }
+
+      if (auto op = take<Minus>(); op)
+      {
+        auto operand = parseUnary();
+        if (!operand)
+        {
+          reportIncomplete(op->portion, "negation", "expression");
+        }
+
+        return NegationOperation{.op = *op, .operand = std::move(*operand)};
+      }
+
+      if (auto op = take<Tilde>(); op)
+      {
+        auto operand = parseUnary();
+        if (!operand)
+        {
+          reportIncomplete(op->portion, "bitwise not", "expression");
+        }
+
+        return BitwiseNotOperation{.op = *op, .operand = std::move(*operand)};
+      }
+
+      if (auto op = take<Exclamation>(); op)
+      {
+        auto operand = parseUnary();
+        if (!operand)
+        {
+          reportIncomplete(op->portion, "logical not", "expression");
+        }
+
+        return LogicalNotOperation{.op = *op, .operand = std::move(*operand)};
+      }
+
+      return parsePrimary();
+    }
+
+    std::optional<Expression> parsePrimary()
+    {
+      if (auto number = take<Number>(); number) { return *number; }
+
+      if (auto identifier = take<CamelCaseIdentifier>(); identifier)
+      {
+        return *identifier;
+      }
+
+      if (auto opening = take<OpeningParenthesis>(); opening)
+      {
+        auto grouped = parseExpression();
+        if (!grouped)
+        {
+          reportIncomplete(opening->portion, "grouping", "expression");
+        }
+
+        auto closing = take<ClosingParenthesis>();
+        if (!closing)
+        {
+          reportIncomplete(
+            Portion::merge(opening->portion, findPortion(*grouped)),
+            "grouping",
+            "`)`");
+        }
+
+        return Grouping{
+          .opening = *opening,
+          .grouped = std::move(*grouped),
+          .closing = *closing};
+      }
+
+      return std::nullopt;
+    }
 
     template<typename TLexeme>
     std::optional<TLexeme> take()
