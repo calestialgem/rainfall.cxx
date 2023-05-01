@@ -743,6 +743,7 @@ namespace rf
       {
         current.lexeme = lexical.lexemes[current.index];
       }
+      else { current.lexeme = std::nullopt; }
     }
 
     [[noreturn]] void reportWrong(
