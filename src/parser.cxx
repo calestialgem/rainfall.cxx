@@ -703,12 +703,14 @@ namespace rf
       auto leftOperand = (this->*operandParser)();
       if (!leftOperand) { return std::nullopt; }
 
-      auto result = InfixOperationParseResult::NotFound;
-
-      ((parseSingleInfixOperation<
-         &Parser::parseInfixOperation<operandParser, TOperations...>,
-         TOperations>(result, leftOperand)),
-       ...);
+      auto result = InfixOperationParseResult::Parsed;
+      while (result == InfixOperationParseResult::Parsed)
+      {
+        result = InfixOperationParseResult::NotFound;
+        ((parseSingleInfixOperation<operandParser, TOperations>(
+           result, leftOperand)),
+         ...);
+      }
 
       return leftOperand;
     }
