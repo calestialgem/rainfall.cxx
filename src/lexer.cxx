@@ -47,6 +47,11 @@ namespace rf
     Location first;
     Location last;
 
+    static Portion merge(Portion leftMost, Portion rightMost)
+    {
+      return Portion{.first = leftMost.first, .last = rightMost.last};
+    }
+
     static Portion findLine(std::string_view whole, Location location)
     {
       return Portion{
@@ -477,6 +482,76 @@ namespace rf
   Portion findPortion(Lexeme lexeme)
   {
     return std::visit([&](auto l) { return l.portion; }, lexeme);
+  }
+
+  auto& operator<<(auto& out, Lexeme const& lexeme)
+  {
+    out << '`';
+    std::visit(
+      [&](auto const& l)
+      {
+        using TLexeme = std::decay_t<decltype(l)>;
+        if constexpr (std::is_same_v<TLexeme, Const>) { out << "const"; }
+        else if constexpr (std::is_same_v<TLexeme, Auto>) { out << "auto"; }
+        else if constexpr (std::is_same_v<TLexeme, Mut>) { out << "mut"; }
+        else if constexpr (std::is_same_v<TLexeme, OpeningBrace>)
+        {
+          out << "{";
+        }
+        else if constexpr (std::is_same_v<TLexeme, ClosingBrace>)
+        {
+          out << "}";
+        }
+        else if constexpr (std::is_same_v<TLexeme, OpeningParenthesis>)
+        {
+          out << "(";
+        }
+        else if constexpr (std::is_same_v<TLexeme, ClosingParenthesis>)
+        {
+          out << ")";
+        }
+        else if constexpr (std::is_same_v<TLexeme, Semicolon>) { out << ";"; }
+        else if constexpr (std::is_same_v<TLexeme, Star>) { out << "*"; }
+        else if constexpr (std::is_same_v<TLexeme, Slash>) { out << "/"; }
+        else if constexpr (std::is_same_v<TLexeme, Percent>) { out << "%"; }
+        else if constexpr (std::is_same_v<TLexeme, Plus>) { out << "+"; }
+        else if constexpr (std::is_same_v<TLexeme, Minus>) { out << "-"; }
+        else if constexpr (std::is_same_v<TLexeme, Tilde>) { out << "~"; }
+        else if constexpr (std::is_same_v<TLexeme, Caret>) { out << "^"; }
+        else if constexpr (std::is_same_v<TLexeme, Equal>) { out << "="; }
+        else if constexpr (std::is_same_v<TLexeme, EqualEqual>) { out << "=="; }
+        else if constexpr (std::is_same_v<TLexeme, Ampersand>) { out << "&"; }
+        else if constexpr (std::is_same_v<TLexeme, AmpersandAmpersand>)
+        {
+          out << "&&";
+        }
+        else if constexpr (std::is_same_v<TLexeme, Pipe>) { out << "|"; }
+        else if constexpr (std::is_same_v<TLexeme, PipePipe>) { out << "||"; }
+        else if constexpr (std::is_same_v<TLexeme, Exclamation>) { out << "!"; }
+        else if constexpr (std::is_same_v<TLexeme, ExclamationEqual>)
+        {
+          out << "!=";
+        }
+        else if constexpr (std::is_same_v<TLexeme, Left>) { out << "<"; }
+        else if constexpr (std::is_same_v<TLexeme, LeftEqual>) { out << "<="; }
+        else if constexpr (std::is_same_v<TLexeme, LeftLeft>) { out << "<<"; }
+        else if constexpr (std::is_same_v<TLexeme, Right>) { out << ">"; }
+        else if constexpr (std::is_same_v<TLexeme, RightEqual>) { out << ">="; }
+        else if constexpr (std::is_same_v<TLexeme, RightRight>) { out << ">>"; }
+        else if constexpr (
+          std::is_same_v<TLexeme, PascalCaseIdentifier> ||
+          std::is_same_v<TLexeme, CamelCaseIdentifier>)
+        {
+          out << l.value;
+        }
+        else if constexpr (std::is_same_v<TLexeme, Number>)
+        {
+          out << l.mantissa;
+          if (l.exponent != 0) { out << 'e' << l.exponent; }
+        }
+      },
+      lexeme);
+    return out << '`';
   }
 
   /// Representation of a Thrice source file that went through the lexical

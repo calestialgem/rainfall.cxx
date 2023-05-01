@@ -4,20 +4,18 @@
 #include "utility.cxx"
 
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
 
 namespace rf
 {
+  struct Grouping;
   struct PromotionOperation;
   struct NegationOperation;
   struct BitwiseNotOperation;
   struct LogicalNotOperation;
-  struct PrefixIncrementOperation;
-  struct PrefixDecrementOperation;
-  struct PostfixIncrementOperation;
-  struct PostfixDecrementOperation;
   struct MultiplicationOperation;
   struct DivisionOperation;
   struct ReminderOperation;
@@ -41,14 +39,11 @@ namespace rf
   using Expression = std::variant<
     Number,
     CamelCaseIdentifier,
+    Grouping,
     PromotionOperation,
     NegationOperation,
     BitwiseNotOperation,
     LogicalNotOperation,
-    PrefixIncrementOperation,
-    PrefixDecrementOperation,
-    PostfixIncrementOperation,
-    PostfixDecrementOperation,
     MultiplicationOperation,
     DivisionOperation,
     ReminderOperation,
@@ -68,171 +63,256 @@ namespace rf
     LogicalAndOperation,
     LogicalOrOperation>;
 
+  struct Grouping
+  {
+    OpeningParenthesis opening;
+    Box<Expression> grouped;
+    ClosingParenthesis closing;
+  };
+
   struct PromotionOperation
   {
+    Plus op;
     Box<Expression> operand;
   };
 
   struct NegationOperation
   {
+    Minus op;
     Box<Expression> operand;
   };
 
   struct BitwiseNotOperation
   {
+    Tilde op;
     Box<Expression> operand;
   };
 
   struct LogicalNotOperation
   {
-    Box<Expression> operand;
-  };
-
-  struct PrefixIncrementOperation
-  {
-    Box<Expression> operand;
-  };
-
-  struct PrefixDecrementOperation
-  {
-    Box<Expression> operand;
-  };
-
-  struct PostfixIncrementOperation
-  {
-    Box<Expression> operand;
-  };
-
-  struct PostfixDecrementOperation
-  {
+    Exclamation op;
     Box<Expression> operand;
   };
 
   struct MultiplicationOperation
   {
     Box<Expression> leftOperand;
+    Star op;
     Box<Expression> rightOperand;
   };
 
   struct DivisionOperation
   {
     Box<Expression> leftOperand;
+    Slash op;
     Box<Expression> rightOperand;
   };
 
   struct ReminderOperation
   {
     Box<Expression> leftOperand;
+    Percent op;
     Box<Expression> rightOperand;
   };
 
   struct AdditionOperation
   {
     Box<Expression> leftOperand;
+    Plus op;
     Box<Expression> rightOperand;
   };
 
   struct SubtractionOperation
   {
     Box<Expression> leftOperand;
+    Minus op;
     Box<Expression> rightOperand;
   };
 
   struct BitwiseAndOperation
   {
     Box<Expression> leftOperand;
+    Ampersand op;
     Box<Expression> rightOperand;
   };
 
   struct BitwiseOrOperation
   {
     Box<Expression> leftOperand;
+    Pipe op;
     Box<Expression> rightOperand;
   };
 
   struct BitwiseXorOperation
   {
     Box<Expression> leftOperand;
+    Caret op;
     Box<Expression> rightOperand;
   };
 
   struct LeftShiftOperation
   {
     Box<Expression> leftOperand;
+    LeftLeft op;
     Box<Expression> rightOperand;
   };
 
   struct RightShiftOperation
   {
     Box<Expression> leftOperand;
+    RightRight op;
     Box<Expression> rightOperand;
   };
 
   struct EqualOperation
   {
     Box<Expression> leftOperand;
+    EqualEqual op;
     Box<Expression> rightOperand;
   };
 
   struct NotEqualOperation
   {
     Box<Expression> leftOperand;
+    ExclamationEqual op;
     Box<Expression> rightOperand;
   };
 
   struct LessOperation
   {
     Box<Expression> leftOperand;
+    Left op;
     Box<Expression> rightOperand;
   };
 
   struct GreaterOperation
   {
     Box<Expression> leftOperand;
+    Right op;
     Box<Expression> rightOperand;
   };
 
   struct LessOrEqualOperation
   {
     Box<Expression> leftOperand;
+    LeftEqual op;
     Box<Expression> rightOperand;
   };
 
   struct GreaterOrEqualOperation
   {
     Box<Expression> leftOperand;
+    RightEqual op;
     Box<Expression> rightOperand;
   };
 
   struct LogicalAndOperation
   {
     Box<Expression> leftOperand;
+    AmpersandAmpersand op;
     Box<Expression> rightOperand;
   };
 
   struct LogicalOrOperation
   {
     Box<Expression> leftOperand;
+    PipePipe op;
     Box<Expression> rightOperand;
   };
+
+  Portion findPortion(Expression const& expression)
+  {
+    return std::visit(
+      [](auto const& e)
+      {
+        using TExpression = std::decay_t<decltype(e)>;
+        if constexpr (std::is_same_v<TExpression, Grouping>)
+        {
+          return Portion::merge(e.opening.portion, e.closing.portion);
+        }
+        else if constexpr (
+          std::is_same_v<TExpression, PromotionOperation> ||
+          std::is_same_v<TExpression, NegationOperation> ||
+          std::is_same_v<TExpression, BitwiseNotOperation> ||
+          std::is_same_v<TExpression, LogicalNotOperation>)
+        {
+          return Portion::merge(e.op.portion, findPortion(*e.operand));
+        }
+        else if constexpr (
+          std::is_same_v<TExpression, MultiplicationOperation> ||
+          std::is_same_v<TExpression, DivisionOperation> ||
+          std::is_same_v<TExpression, ReminderOperation> ||
+          std::is_same_v<TExpression, AdditionOperation> ||
+          std::is_same_v<TExpression, SubtractionOperation> ||
+          std::is_same_v<TExpression, BitwiseAndOperation> ||
+          std::is_same_v<TExpression, BitwiseOrOperation> ||
+          std::is_same_v<TExpression, BitwiseXorOperation> ||
+          std::is_same_v<TExpression, LeftShiftOperation> ||
+          std::is_same_v<TExpression, RightShiftOperation> ||
+          std::is_same_v<TExpression, EqualOperation> ||
+          std::is_same_v<TExpression, NotEqualOperation> ||
+          std::is_same_v<TExpression, LessOperation> ||
+          std::is_same_v<TExpression, GreaterOperation> ||
+          std::is_same_v<TExpression, LessOrEqualOperation> ||
+          std::is_same_v<TExpression, GreaterOrEqualOperation> ||
+          std::is_same_v<TExpression, LogicalAndOperation> ||
+          std::is_same_v<TExpression, LogicalOrOperation>)
+        {
+          return Portion::merge(
+            findPortion(*e.leftOperand), findPortion(*e.rightOperand));
+        }
+        else { return e.portion; }
+      },
+      expression);
+  }
+
+  struct RefMut;
+
+  using Qualifier = std::variant<Const, Mut, Ampersand, RefMut>;
+
+  struct RefMut
+  {
+    Ampersand ref;
+    Mut mut;
+  };
+
+  Portion findPortion(Qualifier const& qualifier)
+  {
+    return std::visit(
+      [](auto const& q)
+      {
+        using TQualifier = std::decay_t<decltype(q)>;
+        if constexpr (std::is_same_v<TQualifier, RefMut>)
+        {
+          return Portion::merge(q.ref.portion, q.mut.portion);
+        }
+        else { return q.portion; }
+      },
+      qualifier);
+  }
+
+  using Base = std::variant<Auto, PascalCaseIdentifier>;
+
+  Portion findPortion(Base const& base)
+  {
+    return std::visit([](auto const& b) { return b.portion; }, base);
+  }
 
   /// Applications to construct a type.
   struct Formula
   {
-    enum Qualifier
-    {
-      Const,
-      Mut,
-      Ref,
-      RefMut,
-      Plain,
-    };
-
-    using Base = std::variant<Auto, PascalCaseIdentifier>;
-
-    Qualifier qualifier;
+    std::optional<Qualifier> qualifier;
     Base base;
   };
+
+  Portion findPortion(Formula const& formula)
+  {
+    auto basePortion = findPortion(formula.base);
+    if (!formula.qualifier) { return basePortion; }
+
+    auto qualifierPortion = findPortion(*formula.qualifier);
+    return Portion::merge(qualifierPortion, basePortion);
+  }
 
   struct Binding;
 
@@ -245,12 +325,35 @@ namespace rf
     CamelCaseIdentifier name;
   };
 
+  Portion findPortion(Pattern const& pattern)
+  {
+    return std::visit(
+      [](auto const& p)
+      {
+        using TPattern = std::decay_t<decltype(p)>;
+        if constexpr (std::is_same_v<TPattern, Binding>)
+        {
+          return Portion::merge(findPortion(p.type), p.name.portion);
+        }
+        else { return findPortion(p); }
+      },
+      pattern);
+  }
+
   /// Entities in a Thrice program that define the symbols in the program.
   struct Definition
   {
     Pattern pattern;
+    Equal separator;
     Expression bound;
+    Semicolon terminator;
   };
+
+  Portion findPortion(Definition const& definition)
+  {
+    return Portion::merge(
+      findPortion(definition.pattern), definition.terminator.portion);
+  }
 
   /// Representation of a Thrice source file that when through the syntactical
   /// analysis stage of the compiler.
@@ -307,21 +410,67 @@ namespace rf
       }
     }
 
-    std::optional<Definition> parseDefinition() { return std::nullopt; }
+    std::optional<Definition> parseDefinition()
+    {
+      if (auto pattern = parsePattern(); pattern)
+      {
+        if (!std::holds_alternative<Binding>(*pattern))
+        {
+          reportWrong(
+            findPortion(*pattern),
+            "Definition must have a binding in its pattern!");
+        }
+
+        auto separator = take<Equal>();
+        if (!separator)
+        {
+          reportIncomplete(findPortion(*pattern), "definition", "=");
+        }
+
+        auto bound = parseExpression();
+        if (!bound)
+        {
+          reportIncomplete(
+            Portion::merge(findPortion(*pattern), separator->portion),
+            "definition",
+            "expression");
+        }
+
+        auto terminator = take<Semicolon>();
+        if (!terminator)
+        {
+          reportIncomplete(
+            Portion::merge(findPortion(*pattern), findPortion(*bound)),
+            "definition",
+            ";");
+        }
+
+        return Definition{
+          .pattern = std::move(*pattern),
+          .separator = *separator,
+          .bound = std::move(*bound),
+          .terminator = *terminator};
+      }
+
+      return std::nullopt;
+    }
 
     std::optional<Pattern> parsePattern()
     {
-      if (auto f = parseFormula(); f)
+      if (auto formula = parseFormula(); formula)
       {
-        if (auto i = take<CamelCaseIdentifier>(); i)
+        if (auto name = take<CamelCaseIdentifier>(); name)
         {
-          return Binding{.type = *f, .name = *i};
+          return Binding{.type = *formula, .name = *name};
         }
 
-        return *f;
+        return *formula;
       }
 
-      if (auto e = parseExpression(); e) { return *e; }
+      if (auto expression = parseExpression(); expression)
+      {
+        return *expression;
+      }
 
       return std::nullopt;
     }
@@ -330,30 +479,37 @@ namespace rf
     {
       auto qualifier = parseQualifier();
 
-      if (auto b = take<PascalCaseIdentifier>(); b)
+      if (auto base = take<PascalCaseIdentifier>(); base)
       {
-        return Formula{.qualifier = qualifier, .base = *b};
-      }
-      if (auto b = take<Auto>(); b)
-      {
-        return Formula{.qualifier = qualifier, .base = *b};
+        return Formula{.qualifier = qualifier, .base = *base};
       }
 
-      if (qualifier != Formula::Qualifier::Plain) { error("formula base"); }
+      if (auto base = take<Auto>(); base)
+      {
+        return Formula{.qualifier = qualifier, .base = *base};
+      }
+
+      if (qualifier)
+      {
+        reportIncomplete(findPortion(*qualifier), "formula", "base");
+      }
 
       return std::nullopt;
     }
 
-    Formula::Qualifier parseQualifier()
+    std::optional<Qualifier> parseQualifier()
     {
-      if (take<Const>()) { return Formula::Qualifier::Const; }
-      if (take<Mut>()) { return Formula::Qualifier::Mut; }
-      if (take<Ampersand>())
+      if (auto qualifier = take<Const>(); qualifier) { return *qualifier; }
+      if (auto qualifier = take<Mut>(); qualifier) { return *qualifier; }
+      if (auto qualifier = take<Ampersand>(); qualifier)
       {
-        if (take<Mut>()) { return Formula::Qualifier::RefMut; }
-        return Formula::Qualifier::Ref;
+        if (auto extension = take<Mut>(); extension)
+        {
+          return RefMut{.ref = *qualifier, .mut = *extension};
+        }
+        return *qualifier;
       }
-      return Formula::Qualifier::Plain;
+      return std::nullopt;
     }
 
     std::optional<Expression> parseExpression() { return std::nullopt; }
@@ -365,8 +521,9 @@ namespace rf
       {
         return std::nullopt;
       }
+      auto taken = std::get<TLexeme>(*current.lexeme);
       advance();
-      return std::get<TLexeme>(*current.lexeme);
+      return taken;
     }
 
     void advance()
@@ -378,27 +535,48 @@ namespace rf
       }
     }
 
-    [[noreturn]] void error(std::string_view expected)
+    [[noreturn]] void reportWrong(
+      Portion wrongPortion,
+      std::string_view explanation,
+      CompilerLocation caller = CompilerLocation::findCaller()) const
+    {
+      ThriceException::throwWithPortion(
+        lexical.source, wrongPortion, "error", std::tuple{explanation}, caller);
+    }
+
+    [[noreturn]] void reportIncomplete(
+      Portion incompletePortion,
+      std::string_view incompleteName,
+      std::string_view continuationName,
+      CompilerLocation caller = CompilerLocation::findCaller()) const
     {
       if (!current.lexeme)
       {
         ThriceException::throwWithPortion(
           lexical.source,
-          findPortion(*previous.lexeme),
+          incompletePortion,
           "error",
           std::tuple{
-            "Expected a ",
-            expected,
-            " after ",
-            *previous.lexeme,
-            ", at the end of the source file!"});
+            "Expected ",
+            continuationName,
+            " to complete ",
+            incompleteName,
+            ", at the end of the file!"},
+          caller);
       }
       ThriceException::throwWithPortion(
         lexical.source,
-        findPortion(*current.lexeme),
+        incompletePortion,
         "error",
         std::tuple{
-          "Expected a ", expected, " instead of", *current.lexeme, "!"});
+          "Expected ",
+          continuationName,
+          " to complete ",
+          incompleteName,
+          ", instead of ",
+          *current.lexeme,
+          "!"},
+        caller);
     }
   };
 }
