@@ -309,7 +309,35 @@ namespace rf
 
     std::optional<Definition> parseDefinition() { return std::nullopt; }
 
-    std::optional<Formula> parseFormula() { return std::nullopt; }
+    std::optional<Formula> parseFormula()
+    {
+      auto qualifier = parseQualifier();
+
+      if (auto b = take<PascalCaseIdentifier>(); b)
+      {
+        return Formula{.qualifier = qualifier, .base = *b};
+      }
+      if (auto b = take<Auto>(); b)
+      {
+        return Formula{.qualifier = qualifier, .base = *b};
+      }
+
+      if (qualifier != Formula::Qualifier::Plain) { error("formula base"); }
+
+      return std::nullopt;
+    }
+
+    Formula::Qualifier parseQualifier()
+    {
+      if (take<Const>()) { return Formula::Qualifier::Const; }
+      if (take<Mut>()) { return Formula::Qualifier::Mut; }
+      if (take<Ampersand>())
+      {
+        if (take<Mut>()) { return Formula::Qualifier::RefMut; }
+        return Formula::Qualifier::Ref;
+      }
+      return Formula::Qualifier::Plain;
+    }
 
     std::optional<Expression> parseExpression() { return std::nullopt; }
 
@@ -321,7 +349,7 @@ namespace rf
         return std::nullopt;
       }
       advance();
-      return std::get<TLexeme>(current.lexeme);
+      return std::get<TLexeme>(*current.lexeme);
     }
 
     void advance()
@@ -331,6 +359,29 @@ namespace rf
       {
         current.lexeme = lexical.lexemes[current.index];
       }
+    }
+
+    [[noreturn]] void error(std::string_view expected)
+    {
+      if (!current.lexeme)
+      {
+        ThriceException::throwWithPortion(
+          lexical.source,
+          findPortion(*previous.lexeme),
+          "error",
+          std::tuple{
+            "Expected a ",
+            expected,
+            " after ",
+            *previous.lexeme,
+            ", at the end of the source file!"});
+      }
+      ThriceException::throwWithPortion(
+        lexical.source,
+        findPortion(*current.lexeme),
+        "error",
+        std::tuple{
+          "Expected a ", expected, " instead of", *current.lexeme, "!"});
     }
   };
 }
