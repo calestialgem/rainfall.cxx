@@ -27,7 +27,7 @@ BinPackParameters: false
 BitFieldColonSpacing: None
 # BreakAfterAttributes: Always
 BreakBeforeBinaryOperators: None
-BreakBeforeBraces: Allman
+BreakBeforeBraces: Attach
 BreakBeforeConceptDeclarations: Always
 # BreakBeforeInlineASMColon: OnlyMultiline
 BreakBeforeTernaryOperators: true

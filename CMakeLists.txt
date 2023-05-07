@@ -17,4 +17,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   -Wextra
   -Wpedantic
   -Wno-missing-field-initializers # GCC warns when defaulting members to 0.
+  -Wno-gnu-anonymous-struct # Using anonymous structs.
 )
