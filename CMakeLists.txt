@@ -18,4 +18,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   -Wpedantic
   -Wno-missing-field-initializers # GCC warns when defaulting members to 0.
   -Wno-gnu-anonymous-struct # Using anonymous structs.
+  -Wno-nested-anon-types # Nesting anonymous structs.
+  -Wno-microsoft-anon-tag # Declaring tags in anonymous unions.
 )
