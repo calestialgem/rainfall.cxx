@@ -1,23 +1,14 @@
-# Setup for C++ 23 standard.
 cmake_minimum_required(VERSION 3.12)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED true)
-set(CMAKE_CXX_EXTENSIONS off)
 project(rainfall CXX)
 
-## Main executable of the Rainfall compiler.
 add_executable(${PROJECT_NAME} src/main.cxx)
-
-# Add project source root to include directories.
-target_include_directories(${PROJECT_NAME} PRIVATE src)
-
-# Enable all warnings.
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  CXX_STANDARD 20
+  CXX_STANDARD_REQUIRED true
+  CXX_EXTENSIONS off
+)
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wall
   -Wextra
   -Wpedantic
-  -Wno-missing-field-initializers # GCC warns when defaulting members to 0.
-  -Wno-gnu-anonymous-struct # Using anonymous structs.
-  -Wno-nested-anon-types # Nesting anonymous structs.
-  -Wno-microsoft-anon-tag # Declaring tags in anonymous unions.
 )

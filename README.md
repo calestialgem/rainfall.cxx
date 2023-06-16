@@ -9,8 +9,8 @@ rewritten in Thrice.
 
 ## Setup
 
-Project is written using VS Code and clangd. It is compiled using CMake. Only
-`main.cxx` is a translation unit, remaining files are headers.
+Project is written using C++20, VS Code, and clangd. It is compiled using CMake.
+VS Code launching settings exist for Windows.
 
 Tested solely on Windows.
 
