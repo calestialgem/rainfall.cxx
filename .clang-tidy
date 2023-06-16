@@ -1,4 +1,4 @@
-Checks: "bugprone-*,cert-*,-cert-err09-cpp.MaxSize,-cert-err61-cpp.MaxSize,clang-*,concurrency-*,cppcoreguidelines-*,hicpp-*,llvm-*,misc-*,-misc-throw-by-value-catch-by-reference.MaxSize,modernize-*,performance-*,portability-*,readability-*,-cppcoreguidelines-pro-type-vararg,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-hicpp-vararg,-modernize-use-trailing-return-type,-hicpp-deprecated-headers,-modernize-deprecated-headers"
+Checks: "bugprone-*,cert-*,-cert-err09-cpp.MaxSize,-cert-err61-cpp.MaxSize,clang-*,concurrency-*,cppcoreguidelines-*,hicpp-*,llvm-*,misc-*,-misc-throw-by-value-catch-by-reference.MaxSize,modernize-*,performance-*,portability-*,readability-*,-cppcoreguidelines-pro-type-vararg,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-hicpp-vararg,-modernize-use-trailing-return-type,-hicpp-deprecated-headers,-modernize-deprecated-headers,-bugprone-narrowing-conversions,-cppcoreguidelines-narrowing-conversions,-misc-use-anonymous-namespace"
 WarningsAsErrors: ""
 HeaderFilterRegex: ""
 AnalyzeTemporaryDtors: false
