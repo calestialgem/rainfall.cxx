@@ -9,7 +9,7 @@
       "preLaunchTask": "${defaultBuildTask}",
       "program": "${workspaceFolder}/build/rainfall.exe",
       "cwd": "${workspaceFolder}/res",
-      "args": ["thrice/demo", "orderofoperations"],
+      "args": [],
       "console": "integratedTerminal"
     }
   ]
